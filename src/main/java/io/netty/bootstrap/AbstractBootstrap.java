@@ -47,7 +47,7 @@ import java.util.Map;
  * <p>When not used in a {@link ServerBootstrap} context, the {@link #bind()} methods are useful for connectionless
  * transports such as datagram (UDP).</p>
  */
-//子类型B是其父类型的一个类型参数  因此可以返回运行时的实例的引用以支持方法的链式调用
+//子子类型B是其父类型的一个类型参数  因此可以返回运行时的实例的引用以支持方法的链式调用
 public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C extends Channel> implements Cloneable {
 	
 	//TODO 此类为什么需要用volatile 以及下面为什么要同步
