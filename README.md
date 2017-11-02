@@ -12,6 +12,7 @@ ChannelHandlerContext
 ChannelHandler
 
 关系梳理：
+
   1：一个EventLoopGroup 包含1个或者多个EventLoop；
 
   2：一个EventLoop在它的生命周期内只和一个Thread绑定；
