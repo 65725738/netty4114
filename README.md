@@ -26,3 +26,13 @@ ChannelHandler
   6：Each channel has its own pipeline and it is created automatically when a new channel is created。一个Channel 在它的生命周期内  绑定一个ChannelPipeline。
   
 7：一个 Channel 包含了一个 ChannelPipeline, 而 ChannelPipeline 中又维护了一个由 ChannelHandlerContext 组成的双向链表. 这个链表的头是 HeadContext, 链表的尾是 TailContext, 并且每个 ChannelHandlerContext 中又关联着一个 ChannelHandler.
+
+
+
+ 核心思维：
+  netty是个异步执行的网络框架。很多操作都是基于Future/Promise模型.
+  
+  典型的源码：
+  
+  
+  
