@@ -26,6 +26,7 @@ final class DefaultFutureListeners {
     @SuppressWarnings("unchecked")
     DefaultFutureListeners(
             GenericFutureListener<? extends Future<?>> first, GenericFutureListener<? extends Future<?>> second) {
+    	//默认构造函数只有2个 Listeners 的数组
         listeners = new GenericFutureListener[2];
         listeners[0] = first;
         listeners[1] = second;
@@ -41,6 +42,7 @@ final class DefaultFutureListeners {
     public void add(GenericFutureListener<? extends Future<?>> l) {
         GenericFutureListener<? extends Future<?>>[] listeners = this.listeners;
         final int size = this.size;
+        //数组大小达到上线 扩容
         if (size == listeners.length) {
             this.listeners = listeners = Arrays.copyOf(listeners, size << 1);
         }

@@ -193,6 +193,7 @@ final class VoidChannelPromise extends AbstractFuture<Void> implements ChannelPr
         return null;
     }
 
+    // TODO 有什么含义 如何理解这个VoidChannelPromise
     @Override
     public ChannelPromise unvoid() {
         ChannelPromise promise = new DefaultChannelPromise(channel);

@@ -208,9 +208,12 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
                 return promise;
             }
 
+            //异步操作 解析地址
             final Future<SocketAddress> resolveFuture = resolver.resolve(remoteAddress);
 
+          
             if (resolveFuture.isDone()) {
+            	 //异步操作完成执行
                 final Throwable resolveFailureCause = resolveFuture.cause();
 
                 if (resolveFailureCause != null) {
@@ -224,7 +227,10 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
                 return promise;
             }
 
+       	 
+
             // Wait until the name resolution is finished.
+          //异步操作未完成执行 添加监听器 监听器里面执行下一步操作 类似js的callback
             resolveFuture.addListener(new FutureListener<SocketAddress>() {
                 @Override
                 public void operationComplete(Future<SocketAddress> future) throws Exception {

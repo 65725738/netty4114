@@ -158,7 +158,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         synchronized (this) {
             addListener0(listener);
         }
-
+        //防止加入listener的时候 ,future处理完成 监听器已经被执行了一遍
         if (isDone()) {
             notifyListeners();
         }
@@ -179,6 +179,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             }
         }
 
+        //防止加入listener的时候 ,future处理完成 监听器已经被执行了一遍
         if (isDone()) {
             notifyListeners();
         }
@@ -385,6 +386,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         return executor;
     }
 
+    //io线程不允许 wait之类的操作 否则会视为 a dead lock
     protected void checkDeadLock() {
         EventExecutor e = executor();
         if (e != null && e.inEventLoop()) {
@@ -406,12 +408,15 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         checkNotNull(eventExecutor, "eventExecutor");
         checkNotNull(future, "future");
         checkNotNull(listener, "listener");
+        //静态方法  给CompleteFuture的子类 立刻执行listener的 操作
         notifyListenerWithStackOverFlowProtection(eventExecutor, future, listener);
     }
 
     private void notifyListeners() {
         EventExecutor executor = executor();
         if (executor.inEventLoop()) {
+        	// TODO 这里面的处理是什么意思  stackDepth 有什么意义? IO线程处理的话 stackDepth 始终是初始值才对呀！
+        	// 有递归操作吗？ 什么情况下会有递归场景？
             final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
             final int stackDepth = threadLocals.futureListenerStackDepth();
             if (stackDepth < MAX_LISTENER_STACK_DEPTH) {
@@ -510,7 +515,10 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         }
     }
 
+    //TODO 为什么listener监听队列 要如此设计 仅仅是为了这点性能？
     private void addListener0(GenericFutureListener<? extends Future<? super V>> listener) {
+    	//如果只有一个listener 则 Object listeners属性就是 此监听器
+    	// 如果有多个 就用DefaultFutureListeners ，DefaultFutureListeners里面有个listeners数组 初始只有2个,然后按照2的幂增加
         if (listeners == null) {
             listeners = listener;
         } else if (listeners instanceof DefaultFutureListeners) {
