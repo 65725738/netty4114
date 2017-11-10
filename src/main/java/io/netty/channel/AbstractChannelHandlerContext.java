@@ -74,6 +74,8 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     final EventExecutor executor;
     private ChannelFuture succeededFuture;
 
+    
+    //TODO 这几个task是干什么的？有什么意义？
     // Lazily instantiated tasks used to trigger events to a handler with different executor.
     // There is no need to make this volatile as at worse it will just create a few more instances then needed.
     private Runnable invokeChannelReadCompleteTask;
@@ -981,6 +983,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
      * This is needed as {@link DefaultChannelPipeline} may already put the {@link ChannelHandler} in the linked-list
      * but not called {@link ChannelHandler#handlerAdded(ChannelHandlerContext)}.
      */
+    //TODO 一般情况下ChannelHandler 应该都是返回ture吧？ 返回false的场景是什么？？
     private boolean invokeHandler() {
         // Store in local variable to reduce volatile reads.
         int handlerState = this.handlerState;
@@ -1025,7 +1028,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     public String toString() {
         return StringUtil.simpleClassName(ChannelHandlerContext.class) + '(' + name + ", " + channel() + ')';
     }
-
+   //TODO 待研究作用
     abstract static class AbstractWriteTask implements Runnable {
 
         private static final boolean ESTIMATE_TASK_SIZE_ON_SUBMIT =

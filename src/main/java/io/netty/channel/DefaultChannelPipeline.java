@@ -80,6 +80,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
      * Thus full iterations to do insertions is assumed to be a good compromised to saving memory and tail management
      * complexity.
      */
+    //TODO 作用如何？
     private PendingHandlerCallback pendingHandlerCallbackHead;
 
     /**
