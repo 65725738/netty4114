@@ -161,4 +161,38 @@ ChannelHandler
          channel.pipeline().addLast("handler", SHARED);
      }
  }
+ 
+ 
+ 
+ 
+ 
+ EventLoop EventLoopGroup 模型
+ 
+ 
+ Bootstrap
+ 
+ 
+ unsafe
+ 
+ 
+ ChannelOutboundBuffer
+ 
+ 
+ 
+ ByteBufAllocator
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
      
