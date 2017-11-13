@@ -45,6 +45,9 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     private static final AtomicIntegerFieldUpdater<AbstractChannelHandlerContext> HANDLER_STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractChannelHandlerContext.class, "handlerState");
 
+    
+    
+    //TODO 下面四个常量表示 ChannelHandler 的增加回调操作handlerAdded(ChannelHandlerContext)的执行状态
     /**
      * {@link ChannelHandler#handlerAdded(ChannelHandlerContext)} is about to be called.
      */
@@ -984,6 +987,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
      * but not called {@link ChannelHandler#handlerAdded(ChannelHandlerContext)}.
      */
     //TODO 一般情况下ChannelHandler 应该都是返回ture吧？ 返回false的场景是什么？？
+    // 可能是如果context 的 EventExecutor 是io线程,会导致handlerAdded回调还没处理完毕，其他回调就先执行了。
     private boolean invokeHandler() {
         // Store in local variable to reduce volatile reads.
         int handlerState = this.handlerState;

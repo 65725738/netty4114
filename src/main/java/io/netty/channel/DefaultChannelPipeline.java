@@ -81,6 +81,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
      * complexity.
      */
     //TODO 作用如何？
+    // 处理HandlerAdded回调等register成功以后(the channel was registered on an eventloop)
     private PendingHandlerCallback pendingHandlerCallbackHead;
 
     /**
@@ -120,6 +121,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return new DefaultChannelHandlerContext(this, childExecutor(group), name, handler);
     }
 
+    //TODO 待研究
     private EventExecutor childExecutor(EventExecutorGroup group) {
         if (group == null) {
             return null;
@@ -156,16 +158,21 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     public final ChannelPipeline addFirst(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
         synchronized (this) {
+        	//检查是否可以多线程共享的ChannelHandler
             checkMultiplicity(handler);
+            //检查或者生成一个handler name
             name = filterName(name, handler);
 
+            //每个ChannelHandler 都会包装一个 DefaultChannelHandlerContext ,该context是单独的,不共享(即使hander是共享的)
             newCtx = newContext(group, name, handler);
 
+            //把context增加到双向链表
             addFirst0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventloop yet.
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
+            //TODO 需要研究一下netty 各个组件初始化先后顺序 为什么这个地方 channel会没有注册到eventloop？
             if (!registered) {
                 newCtx.setAddPending();
                 callHandlerCallbackLater(newCtx, true);
@@ -173,7 +180,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             }
 
             EventExecutor executor = newCtx.executor();
+            //当前线程 不是channel分配的io线程 用context设置的EventExecutor执行handler增加成功回调操作
             if (!executor.inEventLoop()) {
+            	//不是io线程处理 需要先设置ADD_PENDING 状态。 防止handlerAdded未执行 就执行其他的回调操作
                 newCtx.setAddPending();
                 executor.execute(new Runnable() {
                     @Override
@@ -184,6 +193,8 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return this;
             }
         }
+        
+        //执行handler增加成功回调操作
         callHandlerAdded0(newCtx);
         return this;
     }
@@ -415,6 +426,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         // It's not very likely for a user to put more than one handler of the same type, but make sure to avoid
         // any name conflicts.  Note that we don't cache the names generated here.
+        //检查上面创建的名字是否有重名 有的话换一个名字 但是此名字不缓存
         if (context0(name) != null) {
             String baseName = name.substring(0, name.length() - 1); // Strip the trailing '0'.
             for (int i = 1;; i ++) {
@@ -592,6 +604,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private static void checkMultiplicity(ChannelHandler handler) {
         if (handler instanceof ChannelHandlerAdapter) {
             ChannelHandlerAdapter h = (ChannelHandlerAdapter) handler;
+            //如果是new的 h.added 每次都是false
             if (!h.isSharable() && h.added) {
                 throw new ChannelPipelineException(
                         h.getClass().getName() +
@@ -846,6 +859,59 @@ public class DefaultChannelPipeline implements ChannelPipeline {
      *
      * See: https://github.com/netty/netty/issues/3156
      */
+    //TODO destroyUp destroyDown 这样的设计没看懂
+    // See: https://github.com/netty/netty/issues/3156 大致理解了 这样的设计,非常巧妙的设计
+    /**
+     * 
+     Let's say we have a channel with the following pipeline configuration:
+
+	  HEAD --> [E1] H1 --> [E2] H2 --> TAIL
+	
+	when the channel is deregistered, the channelUnregistered() methods of
+	H1 and H2 will be invoked from the executor thread of E1 and E2
+	respectively. To ensure that the channelUnregistered() methods are
+	invoked from the correct thread, new one-time tasks will be created
+	accordingly and be scheduled via Executor.execute(Runnable).
+	
+	As soon as the one-time tasks are scheduled,
+	DefaultChannelPipeline.fireChannelUnregistered() will start to remove
+	all handlers from the pipeline via teardownAll(). This process is
+	performed in reversed order of event propagation. i.e. H2 is removed
+	first, and then H1 is removed.
+	
+	If the channelUnregistered() event has been passed to H2 before H2 is
+	removed, a user does not see any problem.
+	
+	If H2 has been removed before channelUnregistered() event is passed to
+	H2, a user will often see the following confusing warning message:
+	
+	  An exceptionCaught() event was fired, and it reached at the tail of
+	  the pipeline. It usually means the last handler in the pipeline did
+	  not handle the exception.
+	
+	Modifications:
+	
+	To ensure that the handlers are removed *after* all events are
+	propagated, traverse the pipeline in ascending order before performing
+	the actual removal.
+     * 
+            因为fireChannelUnregistered 传播是从head ---> tail ,而 remove的 操作 是 从 tail ---> head 如果
+    fireChannelUnregistered 和 remove操作是在不同线程处理。就有可能发生已经removed了但是还没有执行fireChannelUnregistered
+           导致异常。所以用下面的方式 确保先 fireChannelUnregistered 然后remove。
+    
+           巧妙的设计是，利用netty线程模型。 每次destroy之前，先从head-->tail 遍历一遍。因为先执行fireChannelUnregistered ，然后才会触发remove。
+          而且下面的遍历设计也是 和 fireChannelUnregistered 线程模型一致，所以必然是 fireChannelUnregistered 执行完传播才会执行完destroy的遍历。
+          遍历完毕以后，才真正的从tail执行remove
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * */
     private synchronized void destroy() {
         destroyUp(head.next, false);
     }
@@ -860,6 +926,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             }
 
             final EventExecutor executor = ctx.executor();
+            //与事件传播一样的线程模型 保证先执行事件传播，然后才执行遍历
             if (!inEventLoop && !executor.inEventLoop(currentThread)) {
                 final AbstractChannelHandlerContext finalCtx = ctx;
                 executor.execute(new Runnable() {
@@ -1072,6 +1139,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     }
 
+    //根据名称查找链表里面context
     private AbstractChannelHandlerContext context0(String name) {
         AbstractChannelHandlerContext context = head.next;
         while (context != tail) {
@@ -1126,6 +1194,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         // This must happen outside of the synchronized(...) block as otherwise handlerAdded(...) may be called while
         // holding the lock and so produce a deadlock if handlerAdded(...) will try to add another handler from outside
         // the EventLoop.
+        //TODO 单个synchronized 为什么会出现死锁？ 
         PendingHandlerCallback task = pendingHandlerCallbackHead;
         while (task != null) {
             task.execute();
