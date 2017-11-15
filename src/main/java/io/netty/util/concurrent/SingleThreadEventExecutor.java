@@ -243,6 +243,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 }
                 return task;
             } else {
+            	//对于阻塞获取task 必须要考虑延时任务 所以只能阻塞到下一个延时任务开始的时间
                 long delayNanos = scheduledTask.delayNanos();
                 Runnable task = null;
                 if (delayNanos > 0) {
@@ -344,12 +345,14 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      *
      * @return {@code true} if and only if at least one task was run
      */
+    // 运行任务队列里面所有的任务  包括到时间的延迟任务
     protected boolean runAllTasks() {
         assert inEventLoop();
         boolean fetchedAll;
         boolean ranAtLeastOne = false;
 
         do {
+        	// 延时任务 是否有到期需要执行的
             fetchedAll = fetchFromScheduledTaskQueue();
             if (runAllTasksFrom(taskQueue)) {
                 ranAtLeastOne = true;
@@ -388,6 +391,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * Poll all tasks from the task queue and run them via {@link Runnable#run()} method.  This method stops running
      * the tasks in the task queue and returns if it ran longer than {@code timeoutNanos}.
      */
+    //运行所有的任务 最多运行timeoutNanos 
     protected boolean runAllTasks(long timeoutNanos) {
         fetchFromScheduledTaskQueue();
         Runnable task = pollTask();
@@ -465,6 +469,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         // NOOP
     }
 
+    //TODO 干什么的？
     protected void wakeup(boolean inEventLoop) {
         if (!inEventLoop || state == ST_SHUTTING_DOWN) {
             // Use offer as we actually only need this to unblock the thread and if offer fails we do not care as there
@@ -534,6 +539,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         return ran;
     }
 
+    //TODO 优雅的逻辑 看不懂呀！
     @Override
     public Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit) {
         if (quietPeriod < 0) {
@@ -599,6 +605,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     @Override
     @Deprecated
+    //TODO 不优雅的 也没看懂逻辑
     public void shutdown() {
         if (isShutdown()) {
             return;
@@ -660,6 +667,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     /**
      * Confirm that the shutdown if the instance should be done now!
      */
+    //TODO 关于关闭的逻辑 都没看懂
     protected boolean confirmShutdown() {
         if (!isShuttingDown()) {
             return false;
@@ -732,6 +740,28 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         return isTerminated();
     }
 
+    //TODO 是不是 本类SingleThreadEventExecutor new出来的 是没有开启自身线程的 也就是SingleThreadEventExecutor.this.thread 是null. 只有调用这个方法才会startThread();
+    // 上面很多方法 都这样调用  是为了防止调用的时候SingleThreadEventExecutor.this.thread 是null？
+    /**
+     * 
+     * public void addShutdownHook(final Runnable task) {
+        if (inEventLoop()) {
+            shutdownHooks.add(task);
+        } else {
+            execute(new Runnable() {
+                @Override
+                public void run() {
+                    shutdownHooks.add(task);
+                }
+            });
+        }
+    }
+     * 
+     * 
+     * 
+     * 
+     * */
+    
     @Override
     public void execute(Runnable task) {
         if (task == null) {
@@ -842,8 +872,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    // 开启本类的线程 也没看懂
     private void doStartThread() {
         assert thread == null;
+        // 本类SingleThreadEventExecutor的 executor 开启一个新线程 并且 赋值与当前类的Thread。 
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -855,11 +887,14 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
+                	//本类的子类实现 本类的run逻辑 真正的线程执行方法  如果是NioEventLoop 就是 run里面 就是  loop
                     SingleThreadEventExecutor.this.run();
                     success = true;
                 } catch (Throwable t) {
                     logger.warn("Unexpected exception from an event executor: ", t);
                 } finally {
+                	//TODO 啥意思？？
+                	// 设置当前类 状态ST_SHUTTING_DOWN
                     for (;;) {
                         int oldState = state;
                         if (oldState >= ST_SHUTTING_DOWN || STATE_UPDATER.compareAndSet(

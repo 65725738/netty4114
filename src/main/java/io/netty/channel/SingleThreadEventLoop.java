@@ -35,6 +35,7 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
     protected static final int DEFAULT_MAX_PENDING_TASKS = Math.max(16,
             SystemPropertyUtil.getInt("io.netty.eventLoop.maxPendingTasks", Integer.MAX_VALUE));
 
+    //TODO  这个任务队列是干嘛的？
     private final Queue<Runnable> tailTasks;
 
     protected SingleThreadEventLoop(EventLoopGroup parent, ThreadFactory threadFactory, boolean addTaskWakesUp) {
@@ -74,6 +75,7 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
         return register(new DefaultChannelPromise(channel, this));
     }
 
+    //注册到 channel  一个EventLoop 可能会被分配给一个或者多个Channel
     @Override
     public ChannelFuture register(final ChannelPromise promise) {
         ObjectUtil.checkNotNull(promise, "promise");

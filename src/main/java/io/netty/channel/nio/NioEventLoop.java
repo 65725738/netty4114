@@ -147,6 +147,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
         provider = selectorProvider;
         final SelectorTuple selectorTuple = openSelector();
+        // TODO 为什么要用这个包装的SelectedSelectionKeySetSelector
         selector = selectorTuple.selector;
         unwrappedSelector = selectorTuple.unwrappedSelector;
         selectStrategy = strategy;
@@ -167,6 +168,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
     }
 
+    //TODO AccessController.doPrivileged 处理jdk nio bug？ 研究一下
     private SelectorTuple openSelector() {
         final Selector unwrappedSelector;
         try {
@@ -256,10 +258,12 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     @Override
     protected Queue<Runnable> newTaskQueue(int maxPendingTasks) {
         // This event loop never calls takeTask()
+    	//TODO PlatformDependent相关的需要研究
         return maxPendingTasks == Integer.MAX_VALUE ? PlatformDependent.<Runnable>newMpscQueue()
                                                     : PlatformDependent.<Runnable>newMpscQueue(maxPendingTasks);
     }
 
+    //TODO 获取任务队列大小 也必须要在inEventLoop 里面？ 为什么会这样？
     @Override
     public int pendingTasks() {
         // As we use a MpscQueue we need to ensure pendingTasks() is only executed from within the EventLoop as
@@ -324,7 +328,12 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     /**
      * Replaces the current {@link Selector} of this event loop with newly created {@link Selector}s to work
      * around the infamous epoll 100% CPU bug.
+     * 
+     * 
+     * Linux-like OSs的选择器使用的是epoll-IO事件通知工具。这是一个在操作系统以异步方式工作的网络stack.Unfortunately
+     * ，即使是现在，著名的epoll-bug也可能会导致无效的状态的选择和100%的CPU利用率。要解决epoll-bug的唯一方法是回收旧的选择器，将先前注册的通道实例转移到新创建的选择器上 
      */
+    
     public void rebuildSelector() {
         if (!inEventLoop()) {
             execute(new Runnable() {
