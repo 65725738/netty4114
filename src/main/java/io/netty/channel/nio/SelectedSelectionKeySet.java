@@ -29,8 +29,15 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
         keys = new SelectionKey[1024];
     }
 
+    //这个方法是 select的实现类调用的。 通过特殊处理把SelectedSelectionKeySet 设置成select的实现类的selectedKeys   。特殊处理在NioEventLoop.openSelector()
     @Override
     public boolean add(SelectionKey o) {
+    	
+    	try{
+    		int i =1 /0;
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
         if (o == null) {
             return false;
         }
