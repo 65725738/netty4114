@@ -117,6 +117,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return touch ? ReferenceCountUtil.touch(msg, next) : msg;
     }
 
+    //每个handler在增加到ChannelPipeline里面之前都会包装在Context里面 Context添加到ChannelPipeline里面会根据hander设置的EventExecutorGroup 选择EventGroup默认是channel的EventGroup(IO线程)
     private AbstractChannelHandlerContext newContext(EventExecutorGroup group, String name, ChannelHandler handler) {
         return new DefaultChannelHandlerContext(this, childExecutor(group), name, handler);
     }
@@ -127,9 +128,12 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             return null;
         }
         Boolean pinEventExecutor = channel.config().getOption(ChannelOption.SINGLE_EVENTEXECUTOR_PER_GROUP);
+        //配置了 每个group里面只有一个 Executor
         if (pinEventExecutor != null && !pinEventExecutor) {
             return group.next();
         }
+        
+        //用4个Executor 并且每个the same channel 的 Executor 是一样的
         Map<EventExecutorGroup, EventExecutor> childExecutors = this.childExecutors;
         if (childExecutors == null) {
             // Use size of 4 as most people only use one extra EventExecutor.

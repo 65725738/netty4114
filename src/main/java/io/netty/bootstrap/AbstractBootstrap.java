@@ -55,6 +55,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     @SuppressWarnings("deprecation")
     private volatile ChannelFactory<? extends C> channelFactory;
     private volatile SocketAddress localAddress;
+    //TODO 研究一下ChannelOption AttributeKey实现
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
     private final Map<AttributeKey<?>, Object> attrs = new LinkedHashMap<AttributeKey<?>, Object>();
     private volatile ChannelHandler handler;
@@ -291,11 +292,14 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
 
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
+        	// 创建一个 DefaultChannelPromise
             ChannelPromise promise = channel.newPromise();
             doBind0(regFuture, channel, localAddress, promise);
             return promise;
         } else {
             // Registration future is almost always fulfilled already, but just in case it's not.
+        	// 没注册成功 不能通过channel获取DefaultChannelPromise  创建一个DefaultChannelPromise的子类
+        	//PendingRegistrationPromise 会根据是否注册成功 来 选择correct executor
             final PendingRegistrationPromise promise = new PendingRegistrationPromise(channel);
             regFuture.addListener(new ChannelFutureListener() {
                 @Override
@@ -318,10 +322,13 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
     }
 
+    // 创建 绑定一个ChannelPipeline 初始化handler 注册到 channel  到一个EventLoop 
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
+        	//根据设置的channel类型 创建channel
             channel = channelFactory.newChannel();
+            //初始化channel 包括此channel 创建 绑定一个ChannelPipeline 初始化handler 等
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -332,6 +339,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
+        //注册到 channel  到一个EventLoop 
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {
@@ -360,11 +368,12 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             final SocketAddress localAddress, final ChannelPromise promise) {
 
         // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up
-        // the pipeline in its channelRegistered() implementation.
+        // the pipeline in its channelRegistered() implementation. TODO 应该是在channelRegistered() 之后调用呀？这个时候已经Registered done了
         channel.eventLoop().execute(new Runnable() {
             @Override
             public void run() {
                 if (regFuture.isSuccess()) {
+                	//如果bind失败 ChannelFutureListener.CLOSE_ON_FAILURE 执行 future.channel().close();
                     channel.bind(localAddress, promise).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
                 } else {
                     promise.setFailure(regFuture.cause());

@@ -135,6 +135,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     }
 
     static void invokeChannelRegistered(final AbstractChannelHandlerContext next) {
+
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
             next.invokeChannelRegistered();
@@ -149,6 +150,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     }
 
     private void invokeChannelRegistered() {
+
         if (invokeHandler()) {
             try {
                 ((ChannelInboundHandler) handler()).channelRegistered(this);
@@ -987,7 +989,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
      * but not called {@link ChannelHandler#handlerAdded(ChannelHandlerContext)}.
      */
     //TODO 一般情况下ChannelHandler 应该都是返回ture吧？ 返回false的场景是什么？？
-    // 可能是如果context 的 EventExecutor 是io线程,会导致handlerAdded回调还没处理完毕，其他回调就先执行了。
+    // 可能是如果context 的 EventExecutor 不是io线程,会导致handlerAdded回调还没处理完毕，其他回调就先执行了。
     private boolean invokeHandler() {
         // Store in local variable to reduce volatile reads.
         int handlerState = this.handlerState;

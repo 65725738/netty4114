@@ -17,15 +17,17 @@ package io.netty.example.echo;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 /**
  * Handler implementation for the echo client.  It initiates the ping-pong
  * traffic between the echo client and server by sending the first message to
  * the server.
  */
-public class EchoClientHandler extends ChannelInboundHandlerAdapter {
+public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
 
     private final ByteBuf firstMessage;
 
@@ -39,25 +41,28 @@ public class EchoClientHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) {
-        ctx.writeAndFlush(firstMessage);
-    }
+//    @Override
+//    public void channelActive(ChannelHandlerContext ctx) {
+//        ctx.writeAndFlush(firstMessage);
+//    }
+    
+  @Override
+  public void channelActive(ChannelHandlerContext ctx) {
+	  System.out.println("#########################################ddddd");
+	  ChannelFuture fh=  ctx.writeAndFlush(firstMessage);
+	  
+	  
+	  System.out.println(fh.cause());
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        ctx.write(msg);
-    }
+  }
 
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-       ctx.flush();
-    }
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        // Close the connection when an exception is raised.
-        cause.printStackTrace();
-        ctx.close();
-    }
+	@Override
+	protected void channelRead0(ChannelHandlerContext ctx, Object msg)
+			throws Exception {
+		// TODO Auto-generated method stub
+		System.out.println("#########################################"+msg);
+
+		
+	}
 }

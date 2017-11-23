@@ -120,6 +120,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     private Selector selector;
     //真正的Selector
     private Selector unwrappedSelector;
+    
+    //TODO 用数组实现set 什么原因？ jdk的selectedKeys 是 hashset 。为什么要用数组从新实现？
     private SelectedSelectionKeySet selectedKeys;
 
     private final SelectorProvider provider;
@@ -575,7 +577,9 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 break;
             }
 
+           
             if (needsToSelectAgain) {
+            	 //needsToSelectAgain  为true 重新选择selectedKeys 然后重新执行
                 selectAgain();
                 selectedKeys = selector.selectedKeys();
 
@@ -594,6 +598,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             final SelectionKey k = selectedKeys.keys[i];
             // null out entry in the array to allow to have it GC'ed once the Channel close
             // See https://github.com/netty/netty/issues/2363
+            //processSelectedKeysPlain(Set<SelectionKey> selectedKeys)的用jdk本身的selectedKeys 是每次需要Iterator.remove() 这里是数组实现 设置为null
             selectedKeys.keys[i] = null;
 
             final Object a = k.attachment();
@@ -609,6 +614,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             if (needsToSelectAgain) {
                 // null out entries in the array to allow to have it GC'ed once the Channel close
                 // See https://github.com/netty/netty/issues/2363
+                //processSelectedKeysPlain(Set<SelectionKey> selectedKeys)用jdk本身的selectedKeys 是每次需要Iterator.remove() 这里是数组实现 设置i+1 以后的null,i+1之前的上面已经设置为null了
                 selectedKeys.reset(i + 1);
 
                 selectAgain();
@@ -860,11 +866,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     }
 
     
-    //这个有什么意义 ？ 仅仅是把needsToSelectAgain = false 然后清除wakeup状态？？？？
     private void selectAgain() {
         needsToSelectAgain = false;
         try {
-        	//并没有update SelectionKeys 呀？
+        	//会更新selectedKeys
             selector.selectNow();
         } catch (Throwable t) {
             logger.warn("Failed to update SelectionKeys.", t);

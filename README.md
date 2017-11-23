@@ -165,6 +165,74 @@ ChannelHandler
  
  
  
+客户端连接：
+典型的样例：
+  // Configure the client.
+        Bootstrapgroup = new NioEventLoopGroup();
+        try {
+            Bootstrap b = new Bootstrap();
+            b.group(group)
+             .channel(NioSocketChannel.class)
+             .option(ChannelOption.TCP_NODELAY, true)
+             .handler(new ChannelInitializer<SocketChannel>() {
+                 @Override
+                 public void initChannel(SocketChannel ch) throws Exception {
+                     ChannelPipeline p = ch.pipeline();
+                     if (sslCtx != null) {
+                         p.addLast(sslCtx.newHandler(ch.alloc(), HOST, PORT));
+                     }
+                     //p.addLast(new LoggingHandler(LogLevel.INFO));
+                     p.addLast(new EchoClientHandler());
+                 }
+             });
+            // Start the client.
+            ChannelFuture f = b.connect(HOST, PORT).sync();
+            // Wait until the connection is closed.
+            f.channel().closeFuture().sync();
+        } finally {
+            // Shut down the event loop to terminate all threads.
+            group.shutdownGracefully();
+        }
+
+启动 线程
+Bootstrap.connect--> Bootstrap.doResolveAndConnect-->AbstractBootstrap.initAndRegister(创建channel创建 绑定一个ChannelPipeline)-->Bootstrap.init-->ChannelPipeline.addLast(config.handler())(这里会把上面设置在Bootstrap的handler添加到此channel的ChannelPipeline维护的双向列表里面,这个handler就是ChannelInitializer。后面执行他的handlerAdded才会把真正我们设置的handler添加到ChannelPipeline里面，添加完并移除ChannelInitializer )-->DefaultChannelPipeline.newContext(每个handler在增加到ChannelPipeline里面之前都会包装在Context里面 Context添加到ChannelPipeline里面会根据hander设置的EventExecutorGroup 选择EventGroup默认是channel的EventGroup(IO线程),添加到ChannelPipeline之后，会根据channel是否注册去延迟(DefaultChannelPipeline.callHandlerCallbackLater)还是立刻执行(DefaultChannelPipeline.callHandlerAdded0-->AbstractChannelHandlerContext..handler().handlerAdded) 。这里channel还没有注册是延迟执行.最终执行handlerAdded是设置handler时候设置的EventGroup)-->MultithreadEventLoopGroup.register(Bootstrap设置的Bootstrapgroup这里是NioEventLoopGroup,初始化会根据配置(MultithreadEventExecutorGroup构造函数初始化)初始化n个EventGroup，然后根据选择器选择一个返回)-->SingleThreadEventLoop.register-->AbstractUnsafe.register(把channel注册到上一步返回的NioEventLoop,注意这里的NioEventLoop还没有startthead)-->SingleThreadEventExecutor.execute(Runnable task)(这里要执行的是AbstractUnsafe.register0)-->SingleThreadEventExecutor.startThread(上面channel绑定的NioEventLoop开启thread)-->SingleThreadEventExecutor.addTask(把真正的注册AbstractUnsafe.register0放到上面channel绑定的io线程NioEventLoop的执行队列。此时会有一个IO线程启动执行)-->Bootstrap.doResolveAndConnect0(如果已经注册成功执行,否则会在regFuture.addListener()里面等注册完成再执行)-->f.channel().closeFuture().sync()
+
+
+io事件循环线程：再上面的启动线程运行到SingleThreadEventExecutor.startThread会启动io事件循环线程，NioEventLoop事件循环线程会一直在循环执行根据一定的策略主要执行 select选择器任务，普通任务，定时延迟任务。
+启动开始的时候，会接收到一个任务AbstractUnsafe.register0然后执行.
+AbstractUnsafe.register0-->AbstractNioChannel.doRegister(把channel绑定的java的 SelectableChannel绑定到NioEventLoop的Selector此时channel 注册成功)-->ChannelPipeline.invokeHandlerAddedIfNeeded(执行ChannelPipeline里面因为没有注册成功而延迟执行的handler的handlerAdded,这里面会执行上面ChannelInitializer的延迟方法)ChannelInitializer.handlerAdded-->ChannelInitializer.initChannel(这里执行上面自定义增加的handler已经每个handler的handlerAdded,最后移除自己)
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  
  EventLoop EventLoopGroup 模型
  

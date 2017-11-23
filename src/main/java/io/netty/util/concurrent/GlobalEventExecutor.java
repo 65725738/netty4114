@@ -41,6 +41,8 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
     public static final GlobalEventExecutor INSTANCE = new GlobalEventExecutor();
 
     final BlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<Runnable>();
+    
+    //延迟一秒执行任务 默认添加此任务
     final ScheduledFutureTask<Void> quietPeriodTask = new ScheduledFutureTask<Void>(
             this, Executors.<Void>callable(new Runnable() {
         @Override
@@ -246,9 +248,11 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                     // Mark the current thread as stopped.
                     // The following CAS must always success and must be uncontended,
                     // because only one thread should be running at the same time.
+                	//设置线程运行状态false
                     boolean stopped = started.compareAndSet(true, false);
                     assert stopped;
 
+                    //如果没任务退出
                     // Check if there are pending entries added by execute() or schedule*() while we do CAS above.
                     if (taskQueue.isEmpty() && (scheduledTaskQueue == null || scheduledTaskQueue.size() == 1)) {
                         // A) No new task was added and thus there's nothing to handle
@@ -257,7 +261,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                         //    -> safe to terminate the new thread will take care the rest
                         break;
                     }
-
+                    //如果线程状态依然为false 退出
                     // There are pending tasks added again.
                     if (!started.compareAndSet(false, true)) {
                         // startThread() started a new thread and set 'started' to true.

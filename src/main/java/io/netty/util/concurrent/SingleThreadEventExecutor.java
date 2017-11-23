@@ -872,7 +872,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
-    // 开启本类的线程 也没看懂
+    // 开启本类的线程 
     private void doStartThread() {
         assert thread == null;
         // 本类SingleThreadEventExecutor的 executor 开启一个新线程 并且 赋值与当前类的Thread。 

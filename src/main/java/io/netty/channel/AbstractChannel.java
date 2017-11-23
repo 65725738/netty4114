@@ -466,6 +466,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            //绑定channel的eventLoop
             AbstractChannel.this.eventLoop = eventLoop;
 
             if (eventLoop.inEventLoop()) {
@@ -503,6 +504,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
                 // Ensure we call handlerAdded(...) before we actually notify the promise. This is needed as the
                 // user may already fire events through the pipeline in the ChannelFutureListener.
+                //先registered 然后才能调用 handlerAdded 。在调用fireChannelRegistered前确保handlerAdded 调用
                 pipeline.invokeHandlerAddedIfNeeded();
 
                 safeSetSuccess(promise);

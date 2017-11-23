@@ -252,7 +252,7 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
             final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise connectPromise) {
 
         // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up
-        // the pipeline in its channelRegistered() implementation.
+        // the pipeline in its channelRegistered() implementation.TODO 应该是在channelRegistered() 之后调用呀？这个时候已经Registered done了
         final Channel channel = connectPromise.channel();
         channel.eventLoop().execute(new Runnable() {
             @Override
