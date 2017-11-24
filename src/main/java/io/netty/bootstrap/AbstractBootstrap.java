@@ -56,6 +56,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     private volatile ChannelFactory<? extends C> channelFactory;
     private volatile SocketAddress localAddress;
     //TODO 研究一下ChannelOption AttributeKey实现
+    //都是继承了AbstractConstant 实现也差不多 主要目的注释是说  A singleton which is safe to compare via the {@code ==} operator
+    //主要是比较key值常量的优化 可以借鉴 AttributeKey<T> ChannelOption<T> T只是value值得类型。本身并不存储T的值,他们是key仅仅存储string类型的name 和id
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
     private final Map<AttributeKey<?>, Object> attrs = new LinkedHashMap<AttributeKey<?>, Object>();
     private volatile ChannelHandler handler;

@@ -507,7 +507,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 //先registered 然后才能调用 handlerAdded 。在调用fireChannelRegistered前确保handlerAdded 调用
                 pipeline.invokeHandlerAddedIfNeeded();
 
+                //设置promise registered成功,这里是io事件循环线程会去执行回调操作
                 safeSetSuccess(promise);
+
                 pipeline.fireChannelRegistered();
                 // Only fire a channelActive if the channel has never been registered. This prevents firing
                 // multiple channel actives if the channel is deregistered and re-registered.
@@ -616,6 +618,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
 
             final ChannelOutboundBuffer outboundBuffer = this.outboundBuffer;
+            //TODO 干什么的？
             if (outboundBuffer == null) {
                 // Only needed if no VoidChannelPromise.
                 if (!(promise instanceof VoidChannelPromise)) {
@@ -882,6 +885,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             return unsafeVoidPromise;
         }
 
+        //Channel 没关闭就是open的 new一个新的java SelectableChannel默认是true
         protected final boolean ensureOpen(ChannelPromise promise) {
             if (isOpen()) {
                 return true;

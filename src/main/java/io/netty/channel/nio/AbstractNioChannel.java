@@ -240,6 +240,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         @Override
         public final void connect(
                 final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise promise) {
+        	//设置连接是不可取消的future 确保当前 channel没close 
             if (!promise.setUncancellable() || !ensureOpen(promise)) {
                 return;
             }
@@ -250,6 +251,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                     throw new ConnectionPendingException();
                 }
 
+                //TODO 为什么这里需要wasActive 不是应该为false吗？ 什么情况会为ture ？？
                 boolean wasActive = isActive();
                 if (doConnect(remoteAddress, localAddress)) {
                     fulfillConnectPromise(promise, wasActive);
@@ -257,7 +259,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                     connectPromise = promise;
                     requestedRemoteAddress = remoteAddress;
 
-                    // Schedule connect timeout.
+                    // Schedule connect timeout.设置连接超时处理
                     int connectTimeoutMillis = config().getConnectTimeoutMillis();
                     if (connectTimeoutMillis > 0) {
                         connectTimeoutFuture = eventLoop().schedule(new Runnable() {
@@ -273,6 +275,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                         }, connectTimeoutMillis, TimeUnit.MILLISECONDS);
                     }
 
+                    //设置取消连接回调
                     promise.addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
@@ -293,6 +296,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         }
 
         private void fulfillConnectPromise(ChannelPromise promise, boolean wasActive) {
+        	
             if (promise == null) {
                 // Closed via cancellation and the promise has been notified already.
                 return;
@@ -501,6 +505,11 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         return buf;
     }
 
+    /* (non-Javadoc)
+     * @see io.netty.channel.AbstractChannel#doClose()
+     * 
+     * 如果正在连接过程中 设置连接失败,如果有连接超时任务 取消
+     */
     @Override
     protected void doClose() throws Exception {
         ChannelPromise promise = connectPromise;

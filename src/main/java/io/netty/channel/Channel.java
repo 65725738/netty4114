@@ -250,6 +250,9 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
         /**
          * Disconnect the {@link Channel} of the {@link ChannelFuture} and notify the {@link ChannelPromise} once the
          * operation was complete.
+         * 
+         * 
+         * 
          */
         void disconnect(ChannelPromise promise);
 

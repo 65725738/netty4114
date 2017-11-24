@@ -177,6 +177,8 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
             //TODO 需要研究一下netty 各个组件初始化先后顺序 为什么这个地方 channel会没有注册到eventloop？
+            //handler注册事件回调顺序是 绑定的channel先registered 然后才能调用 handlerAdded,其他的回调方法调用前都要检查当前Context是否ADD_COMPLETE AbstractChannelHandlerContext.invokeHandler()
+            //这里有可能没有注册的原因是Bootstrap在channel 注册之前会先添加一个ChannelInitializer.他添加执行到这里的时候 是 没registered得
             if (!registered) {
                 newCtx.setAddPending();
                 callHandlerCallbackLater(newCtx, true);

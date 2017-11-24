@@ -22,6 +22,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 /**
  * Default {@link AttributeMap} implementation which use simple synchronization per bucket to keep the memory overhead
  * as low as possible.
+ * 
+ * 这个AttributeMap 数据结构类似于hashmap 一个BUCKET_SIZE大小的数组 ,数组里面存放DefaultAttribute head,DefaultAttribute是个双向列表的实现,插入新的DefaultAttribute就放在列表尾部。  DefaultAttribute根据 AttributeKey 的id 分到不同的数组里面,
+ * TODO 为什么要这样的结构？            // Not using ConcurrentHashMap due to high memory consumption. ConcurrentHashMap内存消耗比较大,不适合放到channel里面。否则会影响单机的负载？ ConcurrentHashMap内存占用很大吗？
+ *
  */
 public class DefaultAttributeMap implements AttributeMap {
 
@@ -42,6 +46,7 @@ public class DefaultAttributeMap implements AttributeMap {
         if (key == null) {
             throw new NullPointerException("key");
         }
+        //TODO 为什么喜欢this.attributes 赋值给局部变量？？
         AtomicReferenceArray<DefaultAttribute<?>> attributes = this.attributes;
         if (attributes == null) {
             // Not using ConcurrentHashMap due to high memory consumption.

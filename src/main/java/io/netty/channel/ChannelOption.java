@@ -29,6 +29,8 @@ import java.net.NetworkInterface;
  * to.
  *
  * @param <T>   the type of the value which is valid for the {@link ChannelOption}
+ * 
+ * T仅仅是ChannelOption的值类型
  */
 public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
 
@@ -76,6 +78,9 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
     public static final ChannelOption<MessageSizeEstimator> MESSAGE_SIZE_ESTIMATOR = valueOf("MESSAGE_SIZE_ESTIMATOR");
 
     public static final ChannelOption<Integer> CONNECT_TIMEOUT_MILLIS = valueOf("CONNECT_TIMEOUT_MILLIS");
+    
+    
+
     /**
      * @deprecated Use {@link MaxMessagesRecvByteBufAllocator}
      */
@@ -152,4 +157,10 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
             throw new NullPointerException("value");
         }
     }
+    
+    
+    public static void main(String[] args) {
+         ChannelOption test = valueOf("ss");
+
+	}
 }

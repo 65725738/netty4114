@@ -254,6 +254,8 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
         // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up
         // the pipeline in its channelRegistered() implementation.TODO 应该是在channelRegistered() 之后调用呀？这个时候已经Registered done了
         final Channel channel = connectPromise.channel();
+        
+        //添加到事件循环队列尾部 等注册fireChannelRegistered发出后才连接,所以对于客户端注册成功的时候 isactive是false
         channel.eventLoop().execute(new Runnable() {
             @Override
             public void run() {
