@@ -506,13 +506,13 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 // user may already fire events through the pipeline in the ChannelFutureListener.
                 //先registered 然后才能调用 handlerAdded 。在调用fireChannelRegistered前确保handlerAdded 调用
                 pipeline.invokeHandlerAddedIfNeeded();
-
                 //设置promise registered成功,这里是io事件循环线程会去执行回调操作
                 safeSetSuccess(promise);
 
                 pipeline.fireChannelRegistered();
                 // Only fire a channelActive if the channel has never been registered. This prevents firing
                 // multiple channel actives if the channel is deregistered and re-registered.
+
                 if (isActive()) {
                     if (firstRegistration) {
                         pipeline.fireChannelActive();
