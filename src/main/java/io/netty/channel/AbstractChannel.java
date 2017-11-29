@@ -510,6 +510,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 safeSetSuccess(promise);
 
                 pipeline.fireChannelRegistered();
+                
                 // Only fire a channelActive if the channel has never been registered. This prevents firing
                 // multiple channel actives if the channel is deregistered and re-registered.
 
@@ -553,6 +554,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         "address (" + localAddress + ") anyway as requested.");
             }
 
+            //对于serverchannel bind成功 isActive 就是true
             boolean wasActive = isActive();
             try {
                 doBind(localAddress);
@@ -922,6 +924,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
         private void invokeLater(Runnable task) {
             try {
+            	//TODO 研究一下？
                 // This method is used by outbound operation implementations to trigger an inbound event later.
                 // They do not trigger an inbound event immediately because an outbound operation might have been
                 // triggered by another inbound event handler method.  If fired immediately, the call stack

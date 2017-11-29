@@ -55,6 +55,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             new ClosedChannelException(), AbstractNioChannel.class, "doClose()");
 
     private final SelectableChannel ch;
+    //此Channel 感兴趣的事件,不是在注册到selector的时候添加感兴趣事件 在active为ture 后 调用 doBeginRead注册
     protected final int readInterestOp;
     volatile SelectionKey selectionKey;
     boolean readPending;
@@ -388,6 +389,9 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         boolean selected = false;
         for (;;) {
             try {
+            	//不管是客户端 还是 服务端 把channel注册到 selector上  ops用0  这里没有绑定到OP_READ OP_WRITE OP_ACCEPT 在 connect 或者bind成功 后 fireChannelActive里面会readIfIsAutoRead 会调用 激活read方法 然后会注册感兴趣事件
+            	//TODO 如果channel.config().isAutoRead() 配置为false 怎么办？？？ 这个时候 服务端 是没有注册OP_ACCEPT 没办法接收数据了吗？
+            	
                 selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this);
                 return;
             } catch (CancelledKeyException e) {

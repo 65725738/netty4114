@@ -197,6 +197,9 @@ public interface ChannelOutboundInvoker {
      * {@link ChannelOutboundHandler#read(ChannelHandlerContext)}
      * method called of the next {@link ChannelOutboundHandler} contained in the {@link ChannelPipeline} of the
      * {@link Channel}.
+     * 
+     * 
+     * TODO 上面注释 什么意思？？ 看代码 这个read的作用是  调用unsafe.beginRead 注册通道感兴趣的事件 因为通道注册到selector的时候 注册的是0.这里可能注册 OP_READ  OP_ACCEPT 事件
      */
     ChannelOutboundInvoker read();
 

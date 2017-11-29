@@ -41,6 +41,8 @@ public class AdaptiveRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufA
 
     static {
         List<Integer> sizeTable = new ArrayList<Integer>();
+        
+        //[16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912, 1073741824]
         for (int i = 16; i < 512; i += 16) {
             sizeTable.add(i);
         }
@@ -180,4 +182,21 @@ public class AdaptiveRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufA
     public Handle newHandle() {
         return new HandleImpl(minIndex, maxIndex, initial);
     }
+    
+    
+    public static void main(String[] args) {
+    	 List<Integer> sizeTable = new ArrayList<Integer>();
+         for (int i = 16; i < 512; i += 16) {
+             sizeTable.add(i);
+         }
+
+         for (int i = 512; i > 0; i <<= 1) {
+             sizeTable.add(i);
+         }
+         
+         
+         System.out.println(sizeTable);
+         
+         new  AdaptiveRecvByteBufAllocator() ;
+	}
 }

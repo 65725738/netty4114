@@ -165,10 +165,11 @@ ChannelHandler
  
  
  
+
 客户端连接：
 典型的样例：
   // Configure the client.
-        Bootstrapgroup = new NioEventLoopGroup();
+        EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap b = new Bootstrap();
             b.group(group)
@@ -194,13 +195,70 @@ ChannelHandler
             group.shutdownGracefully();
         }
 
-启动 线程
-Bootstrap.connect--> Bootstrap.doResolveAndConnect-->AbstractBootstrap.initAndRegister(创建channel创建 绑定一个ChannelPipeline)-->Bootstrap.init-->ChannelPipeline.addLast(config.handler())(这里会把上面设置在Bootstrap的handler添加到此channel的ChannelPipeline维护的双向列表里面,这个handler就是ChannelInitializer。后面执行他的handlerAdded才会把真正我们设置的handler添加到ChannelPipeline里面，添加完并移除ChannelInitializer )-->DefaultChannelPipeline.newContext(每个handler在增加到ChannelPipeline里面之前都会包装在Context里面 Context添加到ChannelPipeline里面会根据hander设置的EventExecutorGroup 选择EventGroup默认是channel的EventGroup(IO线程),添加到ChannelPipeline之后，会根据channel是否注册去延迟(DefaultChannelPipeline.callHandlerCallbackLater)还是立刻执行(DefaultChannelPipeline.callHandlerAdded0-->AbstractChannelHandlerContext.handler().handlerAdded) 。这里channel还没有注册是延迟执行.最终执行handlerAdded是设置handler时候设置的EventGroup)-->MultithreadEventLoopGroup.register(Bootstrap设置的Bootstrapgroup这里是NioEventLoopGroup,初始化会根据配置(MultithreadEventExecutorGroup构造函数初始化)初始化n个EventGroup，然后根据选择器选择一个返回)-->SingleThreadEventLoop.register-->AbstractUnsafe.register(把channel注册到上一步返回的NioEventLoop,注意这里的NioEventLoop还没有startthead)-->SingleThreadEventExecutor.execute(Runnable task)(这里要执行的是AbstractUnsafe.register0)-->SingleThreadEventExecutor.startThread(上面channel绑定的NioEventLoop开启thread)-->SingleThreadEventExecutor.addTask(把真正的注册AbstractUnsafe.register0放到上面channel绑定的io线程NioEventLoop的执行队列。此时会有一个IO线程启动执行)-->Bootstrap.doResolveAndConnect0(如果已经注册成功执行这是当前线程执行,否则会在regFuture.addListener()里面等注册完成再执行，这个时候是在事件循环线程执行)-->f.channel().closeFuture().sync()
+启动线程
+
+Bootstrap.connect--> Bootstrap.doResolveAndConnect-->AbstractBootstrap.initAndRegister(创建channel创建 绑定一个ChannelPipeline)-->Bootstrap.init-->ChannelPipeline.addLast(这里会把上面设置在Bootstrap的handler添加到此channel的ChannelPipeline维护的双向列表里面,这个handler就是ChannelInitializer。后面执行他的handlerAdded才会把真正我们设置的handler添加到ChannelPipeline里面，添加完并移除ChannelInitializer )-->DefaultChannelPipeline.newContext(每个handler在增加到ChannelPipeline里面之前都会包装在Context里面, Context添加到ChannelPipeline里面会根据hander设置的EventExecutorGroup 选择EventGroup,默认是channel的EventGroup(IO线程),添加到ChannelPipeline之后，会根据channel是否注册去延迟(DefaultChannelPipeline.callHandlerCallbackLater)还是立刻执行(DefaultChannelPipeline.callHandlerAdded0-->AbstractChannelHandlerContext.handler.handlerAdded) 。这里channel还没有注册是延迟执行.最终执行handlerAdded是设置handler时候设置的EventGroup)-->MultithreadEventLoopGroup.register(Bootstrap设置的EventLoopGroup这里是NioEventLoopGroup,初始化会根据配置(MultithreadEventExecutorGroup构造函数初始化)初始化n个EventGroup，然后根据选择器选择一个返回)-->SingleThreadEventLoop.register-->AbstractUnsafe.register(把channel注册到上一步返回的NioEventLoop,注意这里的NioEventLoop还没有startthead)-->SingleThreadEventExecutor.execute(这里要执行的是AbstractUnsafe.register0)-->SingleThreadEventExecutor.startThread(上面channel绑定的NioEventLoop开启thread)-->SingleThreadEventExecutor.addTask(把真正的注册AbstractUnsafe.register0放到上面channel绑定的io线程NioEventLoop的执行队列。此时会有一个IO线程启动执行)-->Bootstrap.doResolveAndConnect0(如果已经注册成功执行这是当前线程执行,否则会在regFuture.addListener()里面等注册完成再执行，这个时候是在事件循环线程执行)-->f.channel().closeFuture().sync()
+
+
 
 
 io事件循环线程：再上面的启动线程运行到SingleThreadEventExecutor.startThread会启动io事件循环线程，NioEventLoop事件循环线程会一直在循环执行根据一定的策略主要执行 select选择器任务，普通任务，定时延迟任务。
 启动开始的时候，会接收到一个任务AbstractUnsafe.register0然后执行.
-AbstractUnsafe.register0-->AbstractNioChannel.doRegister(把channel绑定的java的 SelectableChannel绑定到NioEventLoop的Selector此时channel 注册成功)-->ChannelPipeline.invokeHandlerAddedIfNeeded-->(执行ChannelPipeline里面因为没有注册成功而延迟执行的handler的handlerAdded,这里面会执行上面ChannelInitializer的延迟方法)ChannelInitializer.handlerAdded-->ChannelInitializer.initChannel(这里执行上面自定义增加的handler已经每个handler的handlerAdded,最后移除自己,注意执行handlerAdded是设置handler时候设置的EventGroup有可能不是io事件循环线程)-->AbstractUnsafe.safeSetSuccess(设置注册future为注册成功)-->Bootstrap.doResolveAndConnect0(regFuture成功回调里面执行)-->Bootstrap.doConnect(中间还有resolveFuture解析地址的，略过不考虑,这里会把真正的连接方法channel.connect()放到io事件循环线程里面待处理,所以这里会继续处理AbstractUnsafe.register0的代码)-->ChannelPipeline.fireChannelRegistered(handler注册事件回调顺序是 绑定的channel先registered 然后才能调用 handlerAdded,其他的回调方法调用前都要检查当前Context是否ADD_COMPLETE AbstractChannelHandlerContext.invokeHandler())-->AbstractUnsafe.isActive(如果已经是active会根据情况执行pipeline.fireChannelActive()和beginRead()这里是false不需要执行)-->channel.connect-->ChannelPipeline.connect-->TailContext.connect-->HeadContext.connect-->AbstractNioUnsafe.connect(这里面会调用javaChannel去连接服务端socket,非阻塞的io会立刻返回。然后设置超时任务处理连接超时没返回调用close资源,还有增加取消连接监听器,取消连接也要close资源然后返回connectPromise)-->NioEventLoop.processSelectedKey(在io事件循环里面会监听select事件一旦connect完成)-->AbstractNioUnsafe.finishConnect-->NioSocketChannel.doFinishConnect-->AbstractNioChannel.fulfillConnectPromise(设置connectPromise连接成功,调用ChannelPipeline.fireChannelActive,最后设置connectPromise为null,客户端连接结束)
+AbstractUnsafe.register0-->AbstractNioChannel.doRegister(把channel绑定的java的 SelectableChannel绑定到NioEventLoop的Selector,此时channel 注册成功,把channel注册到 selector上ops用0  这里没有绑定到OP_READ OP_WRITE OP_ACCEPT 在connect 或者bind成功后 fireChannelActive里面会readIfIsAutoRead 会调用 激活read方法 然后会注册感兴趣事件)-->ChannelPipeline.invokeHandlerAddedIfNeeded-->(执行ChannelPipeline里面因为没有注册成功而延迟执行的handler的handlerAdded,这里面会执行上面ChannelInitializer的延迟方法)ChannelInitializer.handlerAdded-->ChannelInitializer.initChannel(这里执行上面自定义增加的handler已经每个handler的handlerAdded,最后移除自己,注意执行handlerAdded是设置handler时候设置的EventGroup有可能不是io事件循环线程)-->AbstractUnsafe.safeSetSuccess(设置注册future为注册成功)-->Bootstrap.doResolveAndConnect0(regFuture成功回调里面执行)-->Bootstrap.doConnect(中间还有resolveFuture解析地址的，略过不考虑,这里会把真正的连接方法channel.connect()放到io事件循环线程里面待处理,所以这里会继续处理AbstractUnsafe.register0的代码)-->ChannelPipeline.fireChannelRegistered(handler注册事件回调顺序是 绑定的channel先registered 然后才能调用 handlerAdded,其他的回调方法调用前都要检查当前Context是否ADD_COMPLETE AbstractChannelHandlerContext.invokeHandler())-->AbstractUnsafe.isActive(如果已经是active会根据情况执行pipeline.fireChannelActive()和beginRead()这里是false不需要执行)-->channel.connect-->ChannelPipeline.connect-->TailContext.connect-->HeadContext.connect-->AbstractNioUnsafe.connect(这里面会调用javaChannel去连接服务端socket,非阻塞的io会立刻返回。然后设置超时任务处理连接超时没返回调用close资源,还有增加取消连接监听器,取消连接也要close资源然后返回connectPromise)-->NioEventLoop.processSelectedKey(在io事件循环里面会监听select事件一旦connect完成)-->AbstractNioUnsafe.finishConnect-->NioSocketChannel.doFinishConnect-->AbstractNioChannel.fulfillConnectPromise(设置connectPromise连接成功,调用ChannelPipeline.fireChannelActive,最后设置connectPromise为null,客户端连接结束)
+
+
+服务端连接：
+典型的样例：
+ // Configure the server.
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup)
+             .channel(NioServerSocketChannel.class)
+             .option(ChannelOption.SO_BACKLOG, 100)
+             .handler(new LoggingHandler(LogLevel.INFO))
+             .childHandler(new ChannelInitializer<SocketChannel>() {
+                 @Override
+                 public void initChannel(SocketChannel ch) throws Exception {
+                     ChannelPipeline p = ch.pipeline();
+                     if (sslCtx != null) {
+                         p.addLast(sslCtx.newHandler(ch.alloc()));
+                     }
+                     //p.addLast(new LoggingHandler(LogLevel.INFO));
+                     p.addLast(new ServerHandler());
+                 }
+             });
+           
+            // Start the server.
+            ChannelFuture f = b.bind(PORT).sync();
+            // Wait until the server socket is closed.
+            f.channel().closeFuture().sync();
+        } finally {
+            // Shut down all event loops to terminate all threads.
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
+
+
+
+
+启动线程: 
+    服务端和客户端大致流程一样，服务端可以配置两个group，一个是 bossGroup, 用于处理客户端的连接请求; 另一个是 workerGroup, 用于处理与各个客户端连接的 IO 操作。handler option都有child。分别用于serverchannel 和 channel
+   AbstractBootstrap.bind--> AbstractBootstrap.doBind-->AbstractBootstrap.initAndRegister(创建channel创建 绑定一个ChannelPipeline)-->ServerBootstrap.init(这里会定义一个ChannelInitializer,先添加上面配置的handler，然后再添加一个ServerBootstrapAcceptor handler去处理子channel,这个添加时放在事件循环线程的任务队列，也就是说他会在serverchannel 定义的handler执行完毕ChannelRegistered 再添加)-->ChannelPipeline.addLast(这里会把上面设置在ServerBootstrap的handler添加到此serverchannel的ChannelPipeline维护的双向列表里面,这个handler就是ChannelInitializer。后面执行他的handlerAdded才会把真正我们设置的handler添加到ChannelPipeline里面，添加完并移除ChannelInitializer )-->DefaultChannelPipeline.newContext(每个handler在增加到ChannelPipeline里面之前都会包装在Context里面, Context添加到ChannelPipeline里面会根据hander设置的EventExecutorGroup 选择EventGroup,默认是channel的EventGroup(IO线程),添加到ChannelPipeline之后，会根据channel是否注册去延迟(DefaultChannelPipeline.callHandlerCallbackLater)还是立刻执行(DefaultChannelPipeline.callHandlerAdded0-->AbstractChannelHandlerContext.handler.handlerAdded) 。这里channel还没有注册是延迟执行.最终执行handlerAdded是设置handler时候设置的EventGroup)-->MultithreadEventLoopGroup.register(Bootstrap设置的EventLoopGroup这里是NioEventLoopGroup,初始化会根据配置(MultithreadEventExecutorGroup构造函数初始化)初始化n个EventGroup，然后根据选择器选择一个返回)-->SingleThreadEventLoop.register-->AbstractUnsafe.register(把channel注册到上一步返回的NioEventLoop,注意这里的NioEventLoop还没有startthead)-->SingleThreadEventExecutor.execute(这里要执行的是AbstractUnsafe.register0)-->SingleThreadEventExecutor.startThread(上面channel绑定的NioEventLoop开启thread)-->SingleThreadEventExecutor.addTask(把真正的注册AbstractUnsafe.register0放到上面channel绑定的io线程NioEventLoop的执行队列。此时会有一个IO线程启动执行)-->AbstractBootstrap.doBind0(如果已经注册成功执行这是当前线程执行,否则会在regFuture.addListener()里面等注册完成再执行，这个时候是在事件循环线程执行)-->f.channel().closeFuture().sync()
+
+
+io事件循环线程
+
+
+AbstractUnsafe.register0-->AbstractNioChannel.doRegister(把channel绑定的java的 SelectableChannel绑定到NioEventLoop的Selector,此时channel 注册成功,把channel注册到 selector上ops用0  这里没有绑定到OP_READ OP_WRITE OP_ACCEPT 在connect 或者bind成功后 fireChannelActive里面会readIfIsAutoRead 会调用 激活read方法 然后会注册感兴趣事件)-->ChannelPipeline.invokeHandlerAddedIfNeeded-->(执行ChannelPipeline里面因为没有注册成功而延迟执行的handler的handlerAdded,这里面会执行上面ChannelInitializer的延迟方法)ChannelInitializer.handlerAdded-->ChannelInitializer.initChannel(这里执行上面自定义增加的handler已经每个handler的handlerAdded,最后移除自己,注意执行handlerAdded是设置handler时候设置的EventGroup有可能不是io事件循环线程)-->AbstractUnsafe.safeSetSuccess(设置注册future为注册成功)-->AbstractBootstrap.doBind0(regFuture成功回调里面执行这里会把真正的连接方法channel.bind()放到io事件循环线程里面待处理,所以这里会继续处理AbstractUnsafe.register0的代码)-->ChannelPipeline.fireChannelRegistered(handler注册事件回调顺序是 绑定的channel先registered 然后才能调用 handlerAdded,其他的回调方法调用前都要检查当前Context是否ADD_COMPLETE AbstractChannelHandlerContext.invokeHandler())-->AbstractUnsafe.isActive(如果已经是active会根据情况执行pipeline.fireChannelActive()和beginRead()这里是false不需要执行)-->ChannelPipeline.addLast(ServerBootstrapAcceptor 这个hander这个时候会被添加)-->channel.bind-->ChannelPipeline.bind-->TailContext.bind-->HeadContext.bind-->AbstractNioUnsafe.bind-->NioServerSocketChannel.doBind(这里面会调用javaChannel bind成功之后 isActive()就为true)-->AbstractNioUnsafe.invokeLater(放到事件循环队列稍后执行 这里要执行的是fireChannelActive)-->AbstractNioUnsafe.safeSetSuccess-->ChannelPipeline.fireChannelActive-->HeadContext.readIfIsAutoRead-->channel.read-->HeadContext.read-->AbstractUnsafe.beginRead-->AbstractNioUnsafe.doBeginRead(这里会注册serverchannel 为OP_ACCEPT,去监听连接。启动完毕)
+
+
+服务端启动完毕后 。bossGroup的serverchannel会监听OP_ACCEPT事件，如果有连接接入。会执行NioMessageUnsafe.read()这里最终会触发fireChannelRead,然后会执行serverchannel的handler链.ServerBootstrapAcceptor的channelRead里面会把 接收到的channel连接注册到另一个workerGroup里面，并且添加child的handler option等。
+
+
+
+
 
  
  
