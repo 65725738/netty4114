@@ -46,8 +46,17 @@ public class LoggingHandler extends ChannelDuplexHandler {
     protected final InternalLogLevel internalLevel;
 
     private final LogLevel level;
+    
+    
+    
 
-    /**
+    @Override
+	public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    	//如果此处设置false 把这个handler设置为 serverchannel的handler 那么这个serverchannel将不能接受请求
+    	//ctx.channel().config().setAutoRead(false);
+	}
+
+	/**
      * Creates a new instance whose logger name is the fully qualified class
      * name of the instance with hex dump enabled.
      */

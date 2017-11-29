@@ -259,7 +259,9 @@ AbstractUnsafe.register0-->AbstractNioChannel.doRegister(把channel绑定的java
 
 
 
+ChannelOutboundInvoker.read  NioMessageUnsafe.read       ChannelInboundInvoker.fireChannelRead的关系：
 
+      ChannelOutboundInvoker.read的作用是  调用unsafe.beginRead 注册通道感兴趣的事件 因为通道注册到selector的时候 注册的是0.这里可能注册 OP_READ  OP_ACCEPT 事件注册到通道以后,有事件发生会调用NioMessageUnsafe.read 去把channel里面的数据读取到object msg里面然后会调用Inbound的fireChannelRead 去Inbound链路里面处理数据
  
  
  

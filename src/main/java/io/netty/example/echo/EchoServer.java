@@ -55,6 +55,7 @@ public final class EchoServer {
        
             ServerBootstrap b = new ServerBootstrap();
             try {
+            	
             b.group(bossGroup, workerGroup)
              .channel(NioServerSocketChannel.class)
              .option(ChannelOption.SO_BACKLOG, 100)
