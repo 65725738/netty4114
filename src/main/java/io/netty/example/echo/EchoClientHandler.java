@@ -15,6 +15,8 @@
  */
 package io.netty.example.echo;
 
+import java.util.concurrent.TimeUnit;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -30,6 +32,19 @@ import io.netty.channel.SimpleChannelInboundHandler;
 public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
 
     private final ByteBuf firstMessage;
+    
+    
+    @Override
+	public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    	//如果此处设置false 把这个handler设置为 channel的handler 那么这个serverchannel将不能自动接收数据.需要手动调用
+    	//channel.read方法   每次读完之后  都要调用一次 才能重新读取
+    	ctx.channel().config().setAutoRead(false);
+    	
+    	ctx.executor().scheduleAtFixedRate(()->{
+			System.out.println("#########################################read");
+			ctx.channel().read();
+		}, 10,30, TimeUnit.SECONDS);
+	}
 
     /**
      * Creates a client-side handler.
@@ -39,6 +54,8 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
         for (int i = 0; i < firstMessage.capacity(); i ++) {
             firstMessage.writeByte((byte) i);
         }
+        
+        
     }
 
 //    @Override
@@ -48,12 +65,10 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
     
   @Override
   public void channelActive(ChannelHandlerContext ctx) {
-	  System.out.println("#########################################ddddd");
 	  ChannelFuture fh=  ctx.writeAndFlush(firstMessage);
-	  
-	  
-	  System.out.println(fh.cause());
-
+	  if (fh.cause() != null) {
+		  System.out.println(fh.cause());
+	}
   }
 
 
@@ -61,7 +76,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
 	protected void channelRead0(ChannelHandlerContext ctx, Object msg)
 			throws Exception {
 		// TODO Auto-generated method stub
-		System.out.println("#########################################"+msg);
+		System.out.println("channel$$$$$$$$$$$$$$$$$$read!!!!!!!!::::::::::"+msg);
 
 		
 	}

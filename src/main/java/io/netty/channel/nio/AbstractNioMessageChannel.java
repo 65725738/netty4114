@@ -115,6 +115,8 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                 // * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method
                 //
                 // See https://github.com/netty/netty/issues/2254
+            	
+            	//如果handler设置  setAutoRead(false)每次读完之后 都会removeReadOp.下次想读 需要手动调用 channel.read
                 if (!readPending && !config.isAutoRead()) {
                     removeReadOp();
                 }
