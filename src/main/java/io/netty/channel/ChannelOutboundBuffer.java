@@ -170,6 +170,7 @@ public final class ChannelOutboundBuffer {
         }
 
         long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, size);
+        //不能写了 超过写highwatermark
         if (newWriteBufferSize > channel.config().getWriteBufferHighWaterMark()) {
             setUnwritable(invokeLater);
         }
@@ -343,6 +344,8 @@ public final class ChannelOutboundBuffer {
                 break;
             }
         }
+        
+        //TODO 为什么清除所有的？
         clearNioBuffers();
     }
 
