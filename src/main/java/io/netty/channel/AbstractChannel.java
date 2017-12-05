@@ -764,6 +764,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             });
         }
 
+        //注册通道感兴趣的事件 因为通道注册到selector的时候 注册的是0.这里可能注册 OP_READ  OP_ACCEPT 事件注册到通道以后,有事件发生会调用NioMessageUnsafe.read 去把channel里面的数据读取到object msg里面然后会调用Inbound的fireChannelRead 去Inbound链路里面处理数据
         @Override
         public final void beginRead() {
             assertEventLoop();
@@ -814,6 +815,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            //把要write的msg 增加到ChannelOutboundBuffer 的 unflushentry
             outboundBuffer.addMessage(msg, size, promise);
         }
 
@@ -826,6 +828,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+          //flush ChannelOutboundBuffer 的 unflushentry 到 flushentry
             outboundBuffer.addFlush();
             flush0();
         }

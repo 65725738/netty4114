@@ -368,7 +368,7 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
     @Override
     protected int doReadBytes(ByteBuf byteBuf) throws Exception {
         final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
-        allocHandle.attemptedBytesRead(byteBuf.writableBytes());
+        byteBuf.writableBytes();
         return byteBuf.writeBytes(javaChannel(), allocHandle.attemptedBytesRead());
     }
 
@@ -388,6 +388,7 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
     protected void doWrite(ChannelOutboundBuffer in) throws Exception {
         for (;;) {
             int size = in.size();
+            //没有flushed的数据
             if (size == 0) {
                 // All written so clear OP_WRITE
                 clearOpWrite();
@@ -413,6 +414,7 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
                 case 1:
                     // Only one ByteBuf so use non-gathering write
                     ByteBuffer nioBuffer = nioBuffers[0];
+                    //类似自旋锁处理
                     for (int i = config().getWriteSpinCount() - 1; i >= 0; i --) {
                         final int localWrittenBytes = ch.write(nioBuffer);
                         if (localWrittenBytes == 0) {
@@ -447,6 +449,7 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
             // Release the fully written buffers, and update the indexes of the partially written buffer.
             in.removeBytes(writtenBytes);
 
+            //写操作没成功  设置 OpWrite 下次从新写
             if (!done) {
                 // Did not write all buffers completely.
                 incompleteWrite(setOpWrite);

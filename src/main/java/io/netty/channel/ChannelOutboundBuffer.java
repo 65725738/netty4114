@@ -69,6 +69,9 @@ public final class ChannelOutboundBuffer {
 
     private final Channel channel;
 
+    //用一个entry链表 flushedEntry,unflushedEntry,tailEntry三个标记位置 来 进行操作处理
+    // flushedEntry + flushed 标记已经flush的  unflushedEntry一直到tailEntry 表示unflushed
+    
     // Entry(flushedEntry) --> ... Entry(unflushedEntry) --> ... Entry(tailEntry)
     //
     // The Entry that is the first in the linked-list structure that was flushed
@@ -318,6 +321,7 @@ public final class ChannelOutboundBuffer {
      * Removes the fully written entries and update the reader index of the partially written entry.
      * This operation assumes all messages in this buffer is {@link ByteBuf}.
      */
+    //根据 已经write的 writtenBytes 来处理 flushedEntry的 指针 ,如果一个flushedEntry 已经全部write就remove,否则更新这个flushedEntry的 msg的readerIndex,剩下的数据下一次处理
     public void removeBytes(long writtenBytes) {
         for (;;) {
             Object msg = current();
@@ -346,6 +350,7 @@ public final class ChannelOutboundBuffer {
         }
         
         //TODO 为什么清除所有的？
+        //调用之前已经 调用了 ChannelOutboundBuffer.nioBuffers,此方法产生的 nioBufferCount nioBufferSize NIO_BUFFERS 的数据已经处理 需要清除回收
         clearNioBuffers();
     }
 

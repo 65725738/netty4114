@@ -172,6 +172,9 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
                 return;
             }
 
+            //和NioSocketChannel.doWrite 用ChannelOutboundBuffer.nioBuffers()不一样 这里面是单独处理每个msg 处理完毕 直接remove
+            //TODO 可能是ByteBuf吗？
+            //第一个flushedentry是 FileRegion 后面的有可能是ByteBuf 
             if (msg instanceof ByteBuf) {
                 ByteBuf buf = (ByteBuf) msg;
                 int readableBytes = buf.readableBytes();
@@ -208,6 +211,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
                     break;
                 }
             } else if (msg instanceof FileRegion) {
+            	//TODO FileRegion 在读的时候 如何鉴别？需要自己在handler里面 业务处理？？？
                 FileRegion region = (FileRegion) msg;
                 boolean done = region.transferred() >= region.count();
 
