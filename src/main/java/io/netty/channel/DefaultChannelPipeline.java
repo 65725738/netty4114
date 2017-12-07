@@ -117,7 +117,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return touch ? ReferenceCountUtil.touch(msg, next) : msg;
     }
 
-    //每个handler在增加到ChannelPipeline里面之前都会包装在Context里面 Context添加到ChannelPipeline里面会根据hander设置的EventExecutorGroup 选择EventGroup默认是channel的EventGroup(IO线程)
+    //每个handler在增加到ChannelPipeline里面之前都会包装在Context里面  Context添加到ChannelPipeline里面会根据hander设置的EventExecutorGroup 选择EventGroup 默认是channel的EventGroup(IO线程)
     private AbstractChannelHandlerContext newContext(EventExecutorGroup group, String name, ChannelHandler handler) {
         return new DefaultChannelHandlerContext(this, childExecutor(group), name, handler);
     }

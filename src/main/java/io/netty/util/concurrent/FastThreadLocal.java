@@ -40,6 +40,8 @@ import java.util.Set;
  *
  * @param <V> the type of the thread-local variable
  * @see ThreadLocal
+ * 
+ * 
  */
 public class FastThreadLocal<V> {
 
