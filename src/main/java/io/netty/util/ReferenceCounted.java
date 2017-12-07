@@ -57,6 +57,7 @@ public interface ReferenceCounted {
      * purposes.  If this object is determined to be leaked, the information recorded by this operation will be
      * provided to you via {@link ResourceLeakDetector}.
      */
+    //TODO touch方法调用了目的是什么，没看到继承类有什么处理？？？
     ReferenceCounted touch(Object hint);
 
     /**

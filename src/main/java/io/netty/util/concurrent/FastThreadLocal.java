@@ -43,8 +43,12 @@ import java.util.Set;
  * 
  * 
  */
+// 一个类 做为一个变量 放到 每个线程的InternalThreadLocalMap的indexedVariables里面  
+//TODO 为什么设计 indexedVariables的 index 是所有线程共享的而 indexedVariables 不是共享的？ 这样如果index是100 indexedVariables不是至少100个值的数组 99个是浪费空间？
+//netty的线程模型 使用的线程比较少  indexedVariables浪费空间比较少   index共享方便统计总的变量值？？？
 public class FastThreadLocal<V> {
 
+	//TODO 静态变量   FastThreadLocal类变量   始终为0 第一次加载类的时候 值就已经生成 始终为0？？
     private static final int variablesToRemoveIndex = InternalThreadLocalMap.nextVariableIndex();
 
     /**
