@@ -233,10 +233,11 @@ public class ResourceLeakDetector<T> {
      *
      * @return the {@link ResourceLeakTracker} or {@code null}
      */
+    //根据配置级别 加入内存泄漏检测
     public final ResourceLeakTracker<T> track(T obj) {
         return track0(obj);
     }
-
+  //根据配置级别 加入内存泄漏检测 并且 检测一轮是否有泄漏 并报告
     private DefaultResourceLeak track0(T obj) {
         Level level = ResourceLeakDetector.level;
         if (level == Level.DISABLED) {
@@ -273,13 +274,13 @@ public class ResourceLeakDetector<T> {
         for (;;) {
             @SuppressWarnings("unchecked")
             DefaultResourceLeak ref = (DefaultResourceLeak) refQueue.poll();
-            if (ref == null) {
+            if (ref == null) {//无数据 结束本轮检测 没有泄漏
                 break;
             }
 
             ref.clear();
 
-            if (!ref.close()) {
+            if (!ref.close()) {//已经释放内存 不存在泄漏 继续下一个检测
                 continue;
             }
 
