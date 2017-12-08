@@ -24,6 +24,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -205,6 +206,8 @@ public abstract class Recycler<T> {
 
         DefaultHandle(Stack<?> stack) {
             this.stack = stack;
+            System.out.println(" hasBeenRecycled!!!!!"+hasBeenRecycled);
+
         }
 
         @Override
@@ -613,11 +616,22 @@ public abstract class Recycler<T> {
         }
 
         boolean dropHandle(DefaultHandle<?> handle) {
+        	if(!handle.hasBeenRecycled)
+        		  System.out.println("dropHandle hasBeenRecycled!!!!!"+handle.hasBeenRecycled);
+        	if(new Random().nextInt(3000) == 10)
+            System.out.println("dropHandle hasBeenRecycled!!!!!"+handle.hasBeenRecycled);
+
+        	
+        	 
+        	 
+        	 
+        	 
             if (!handle.hasBeenRecycled) {
                 if ((++handleRecycleCount & ratioMask) != 0) {
                     // Drop the object.
                     return true;
                 }
+                System.out.println("handleRecycleCount!!!!!"+handleRecycleCount);
                 handle.hasBeenRecycled = true;
             }
             return false;
