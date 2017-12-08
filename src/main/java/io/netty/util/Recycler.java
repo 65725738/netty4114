@@ -143,6 +143,8 @@ public abstract class Recycler<T> {
     }
 
     @SuppressWarnings("unchecked")
+    
+    //获取一个实例
     public final T get() {
         if (maxCapacityPerThread == 0) {
             return newObject((Handle<T>) NOOP_HANDLE);
@@ -160,6 +162,7 @@ public abstract class Recycler<T> {
      * @deprecated use {@link Handle#recycle(Object)}.
      */
     @Deprecated
+    //回收一个实例
     public final boolean recycle(T o, Handle<T> handle) {
         if (handle == NOOP_HANDLE) {
             return false;
@@ -182,9 +185,12 @@ public abstract class Recycler<T> {
         return threadLocal.get().size;
     }
 
+    //创建一个实例
     protected abstract T newObject(Handle<T> handle);
 
+   
     public interface Handle<T> {
+    	 //回收一个实例
         void recycle(T object);
     }
 
@@ -229,6 +235,7 @@ public abstract class Recycler<T> {
         private static final class Link extends AtomicInteger {
             private final DefaultHandle<?>[] elements = new DefaultHandle[LINK_CAPACITY];
 
+            //读索引 写索引就是本身的值 因为继承了AtomicInteger 而且是天生的线程安全
             private int readIndex;
             private Link next;
         }
@@ -461,6 +468,8 @@ public abstract class Recycler<T> {
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
+        //Stack的elements数组是否有对象可用，如果有则将size大小减1，返回对象。如果elements数组中已经没有对象可用，则需要从仓库中查找是够有可以用的对象，
+        //也就是scavenge的实现，scavenge具体调用的是scavengeSome。Stack的仓库是由WeakOrderQueue连接起来的链表实现的，Stack维护着链表的头部指针。而每个WeakOrderQueue又维护着一个链表，节点由Link实现
         DefaultHandle<T> pop() {
             int size = this.size;
             if (size == 0) {
@@ -475,6 +484,7 @@ public abstract class Recycler<T> {
             if (ret.lastRecycledId != ret.recycleId) {
                 throw new IllegalStateException("recycled multiple times");
             }
+            //设置为0 回收的时候用来防止重复回收多次
             ret.recycleId = 0;
             ret.lastRecycledId = 0;
             this.size = size;
@@ -556,9 +566,11 @@ public abstract class Recycler<T> {
         }
 
         private void pushNow(DefaultHandle<?> item) {
+        	//防止多次回收   对象pop出去会设置recycleId lastRecycledId为0 
             if ((item.recycleId | item.lastRecycledId) != 0) {
                 throw new IllegalStateException("recycled already");
             }
+            //回收了 设置不为0 防止多次回收
             item.recycleId = item.lastRecycledId = OWN_THREAD_ID;
 
             int size = this.size;
