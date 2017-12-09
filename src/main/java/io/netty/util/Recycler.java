@@ -616,16 +616,7 @@ public abstract class Recycler<T> {
         }
 
         boolean dropHandle(DefaultHandle<?> handle) {
-        	if(!handle.hasBeenRecycled)
-        		  System.out.println("dropHandle hasBeenRecycled!!!!!"+handle.hasBeenRecycled);
-        	if(new Random().nextInt(3000) == 10)
-            System.out.println("dropHandle hasBeenRecycled!!!!!"+handle.hasBeenRecycled);
-
-        	
-        	 
-        	 
-        	 
-        	 
+            System.out.println("handleRecycleCount!!!!!"+handle.hasBeenRecycled);
             if (!handle.hasBeenRecycled) {
                 if ((++handleRecycleCount & ratioMask) != 0) {
                     // Drop the object.

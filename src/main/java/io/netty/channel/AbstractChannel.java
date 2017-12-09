@@ -515,6 +515,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 // multiple channel actives if the channel is deregistered and re-registered.
 
                 if (isActive()) {
+                	//服务端serverchannel接受一个连接 注册到workerGroup里面 会走到这里。因为已经客户端已经连接 已经连接就是active状态
                     if (firstRegistration) {
                         pipeline.fireChannelActive();
                     } else if (config().isAutoRead()) {

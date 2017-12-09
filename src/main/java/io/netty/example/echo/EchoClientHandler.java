@@ -41,7 +41,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
     	ctx.channel().config().setAutoRead(false);
     	
     	ctx.executor().scheduleAtFixedRate(()->{
-			System.out.println("#########################################read");
+			//System.out.println("#########################################read");
 			ctx.channel().read();
 		}, 10,30, TimeUnit.SECONDS);
 	}
@@ -51,7 +51,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
      */
     public EchoClientHandler() {
         firstMessage = Unpooled.buffer(EchoClient.SIZE);
-        for (int i = 0; i < firstMessage.capacity(); i ++) {
+        for (int i = 0; i < 16; i ++) {
             firstMessage.writeByte((byte) i);
         }
         

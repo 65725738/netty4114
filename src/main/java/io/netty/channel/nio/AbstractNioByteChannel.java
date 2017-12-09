@@ -111,6 +111,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
         public final void read() {
             final ChannelConfig config = config();
             final ChannelPipeline pipeline = pipeline();
+            //PooledByteBufAllocator
             final ByteBufAllocator allocator = config.getAllocator();
             //AdaptiveRecvByteBufAllocator 默认 
             final RecvByteBufAllocator.Handle allocHandle = recvBufAllocHandle();
@@ -136,6 +137,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
                     byteBuf = null;
                 } while (allocHandle.continueReading());
 
+                //TODO 这个时候就是 读完成吗？ 读完成的概念感觉很奇怪 
                 allocHandle.readComplete();
                 pipeline.fireChannelReadComplete();
 
