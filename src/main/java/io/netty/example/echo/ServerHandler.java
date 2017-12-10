@@ -22,18 +22,18 @@ public class ServerHandler extends SimpleChannelInboundHandler<Object>{
 
 		System.out.println("ServerHandler channelRead0");
 		
-//		ctx.executor().scheduleAtFixedRate(()->{
-//			System.out.println("#########################################"+msg);
-//			 ByteBuf firstMessage = Unpooled.buffer(10);
-//			    for (int i = 0; i < firstMessage.capacity(); i ++) {
-//			        firstMessage.writeByte((byte) i);
-//			    }
-//				ChannelFuture fh=  ctx.writeAndFlush(firstMessage);
-//			  if (fh.cause() != null) {
-//				  System.out.println(fh.cause());
-//			}
-//			  
-//		}, 1,50, TimeUnit.SECONDS);
+		ctx.executor().scheduleAtFixedRate(()->{
+			//System.out.println("#########################################"+msg);
+			 ByteBuf firstMessage = Unpooled.buffer(10000);
+			    for (int i = 0; i < firstMessage.capacity(); i ++) {
+			        firstMessage.writeByte((byte) i);
+			    }
+				ChannelFuture fh=  ctx.writeAndFlush(firstMessage);
+			  if (fh.cause() != null) {
+				  System.out.println(fh.cause());
+			}
+			  
+		}, 1,1, TimeUnit.SECONDS);
 	}
 	
 	

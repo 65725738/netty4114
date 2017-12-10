@@ -257,12 +257,13 @@ public final class ChannelOutboundBuffer {
 
         if (!e.cancelled) {
             // only release message, notify and decrement if it was not canceled before.
+        	//这里是release msg本身
             ReferenceCountUtil.safeRelease(msg);
             safeSuccess(promise);
             decrementPendingOutboundBytes(size, false, true);
         }
 
-        // recycle the entry
+        // recycle the entry 这里是回收对象池Entry
         e.recycle();
 
         return true;

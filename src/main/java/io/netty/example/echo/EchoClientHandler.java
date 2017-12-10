@@ -39,7 +39,6 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
     	//如果此处设置false 把这个handler设置为 channel的handler 那么这个serverchannel将不能自动接收数据.需要手动调用
     	//channel.read方法   每次读完之后  都要调用一次 才能重新读取
     	ctx.channel().config().setAutoRead(false);
-    	
     	ctx.executor().scheduleAtFixedRate(()->{
 			//System.out.println("#########################################read");
 			ctx.channel().read();
@@ -76,7 +75,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
 	protected void channelRead0(ChannelHandlerContext ctx, Object msg)
 			throws Exception {
 		// TODO Auto-generated method stub
-		System.out.println("channel$$$$$$$$$$$$$$$$$$read!!!!!!!!::::::::::"+msg);
+		//System.out.println("channel$$$$$$$$$$$$$$$$$$read!!!!!!!!::::::::::"+msg);
 
 		
 	}

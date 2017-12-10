@@ -313,5 +313,7 @@ DefaultResourceLeak。这样就该对象不可达的时候,虽然ReferenceQueue�
  HashedWheelTimer
  
  Recycler
+ 
+ PooledByteBufAllocator UnpooledByteBufAllocator
      
  AccessController.doPrivileged

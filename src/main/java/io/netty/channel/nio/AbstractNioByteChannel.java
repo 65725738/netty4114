@@ -107,7 +107,8 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             }
         }
 
-        @Override
+        @SuppressWarnings("deprecation")
+		@Override
         public final void read() {
             final ChannelConfig config = config();
             final ChannelPipeline pipeline = pipeline();

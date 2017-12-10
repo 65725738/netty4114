@@ -206,8 +206,6 @@ public abstract class Recycler<T> {
 
         DefaultHandle(Stack<?> stack) {
             this.stack = stack;
-            System.out.println(" hasBeenRecycled!!!!!"+hasBeenRecycled);
-
         }
 
         @Override
@@ -217,6 +215,14 @@ public abstract class Recycler<T> {
             }
             stack.push(this);
         }
+
+		@Override
+		public String toString() {
+			return "DefaultHandle [lastRecycledId=" + lastRecycledId + ", recycleId=" + recycleId + ", hasBeenRecycled="
+					+ hasBeenRecycled + ", value=" + value + "]";
+		}
+        
+        
     }
 
     private static final FastThreadLocal<Map<Stack<?>, WeakOrderQueue>> DELAYED_RECYCLED =
@@ -305,7 +311,7 @@ public abstract class Recycler<T> {
             assert space >= 0;
             availableSharedCapacity.addAndGet(space);
         }
-
+        //将元素添加到tail指向的Link对象中，如果Link已满 则创建一个新的Link实例。 如果空间不够则不添加
         void add(DefaultHandle<?> handle) {
             handle.lastRecycledId = id;
 
@@ -340,6 +346,7 @@ public abstract class Recycler<T> {
                 return false;
             }
 
+            //如果读到这个link尾部 换一个link TODO 为什么不用while ？
             if (head.readIndex == LINK_CAPACITY) {
                 if (head.next == null) {
                     return false;
@@ -359,6 +366,7 @@ public abstract class Recycler<T> {
 
             if (expectedCapacity > dst.elements.length) {
                 final int actualCapacity = dst.increaseCapacity(expectedCapacity);
+                //如果stack已经容量满了 actualCapacity = dstSize
                 srcEnd = min(srcStart + actualCapacity - dstSize, srcEnd);
             }
 
@@ -375,6 +383,7 @@ public abstract class Recycler<T> {
                     }
                     srcElems[i] = null;
 
+                    //TODO 这里是干嘛的？
                     if (dst.dropHandle(element)) {
                         // Drop the object.
                         continue;
@@ -577,6 +586,7 @@ public abstract class Recycler<T> {
             item.recycleId = item.lastRecycledId = OWN_THREAD_ID;
 
             int size = this.size;
+            //如果size大于等于最大maxCapacity 或者 drophandle的策略不满足 都不回收 直接返回  将会在下次gc被回收 不返回到池里面
             if (size >= maxCapacity || dropHandle(item)) {
                 // Hit the maximum capacity or should drop - drop the possibly youngest object.
                 return;
@@ -593,8 +603,10 @@ public abstract class Recycler<T> {
             // we don't want to have a ref to the queue as the value in our weak map
             // so we null it out; to ensure there are no races with restoring it later
             // we impose a memory ordering here (no-op on x86)
+        	//每个recycler有自己的一个stack 但是不同的recycler有不同的stack，delayedRecycled是当前线程所有。当前线程可能有很多的recycler
             Map<Stack<?>, WeakOrderQueue> delayedRecycled = DELAYED_RECYCLED.get();
             WeakOrderQueue queue = delayedRecycled.get(this);
+            //下面根据情况 判断是否加入queue
             if (queue == null) {
                 if (delayedRecycled.size() >= maxDelayedQueues) {
                     // Add a dummy queue so we know we should drop the object
@@ -616,13 +628,12 @@ public abstract class Recycler<T> {
         }
 
         boolean dropHandle(DefaultHandle<?> handle) {
-            System.out.println("handleRecycleCount!!!!!"+handle.hasBeenRecycled);
             if (!handle.hasBeenRecycled) {
+            	//ratioMask这里是7  只有handleRecycleCount是 0 8 16 24 等才会返回对象池 其他的都不返回对象池
                 if ((++handleRecycleCount & ratioMask) != 0) {
                     // Drop the object.
                     return true;
                 }
-                System.out.println("handleRecycleCount!!!!!"+handleRecycleCount);
                 handle.hasBeenRecycled = true;
             }
             return false;
