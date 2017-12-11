@@ -605,7 +605,7 @@ public abstract class Recycler<T> {
             // we don't want to have a ref to the queue as the value in our weak map
             // so we null it out; to ensure there are no races with restoring it later
             // we impose a memory ordering here (no-op on x86)
-        	//每个recycler有自己的一个stack 但是不同的recycler有不同的stack，delayedRecycled是当前线程所有。当前线程可能有很多的recycler
+        	//一个线程可能有多个recycle 就会有多个stack
             Map<Stack<?>, WeakOrderQueue> delayedRecycled = DELAYED_RECYCLED.get();
             WeakOrderQueue queue = delayedRecycled.get(this);
             //下面根据情况 判断是否创建新的queue 是否加入queue
