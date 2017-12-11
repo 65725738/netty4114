@@ -290,6 +290,7 @@ public abstract class Recycler<T> {
          */
         static WeakOrderQueue allocate(Stack<?> stack, Thread thread) {
             // We allocated a Link so reserve the space
+        	// 如果该stack的可用共享空间还能再容下1个WeakOrderQueue(1个WeakOrderQueue至少一个link 一个link大小为 LINK_CAPACITY )那么创建1个WeakOrderQueue，否则返回null
             return reserveSpace(stack.availableSharedCapacity, LINK_CAPACITY)
                     ? WeakOrderQueue.newQueue(stack, thread) : null;
         }
@@ -535,6 +536,7 @@ public abstract class Recycler<T> {
                     break;
                 }
                 WeakOrderQueue next = cursor.next;
+                //TODO 这个逻辑是干嘛的
                 if (cursor.owner.get() == null) {
                     // If the thread associated with the queue is gone, unlink it, after
                     // performing a volatile read to confirm there is no data left to collect.
@@ -606,8 +608,9 @@ public abstract class Recycler<T> {
         	//每个recycler有自己的一个stack 但是不同的recycler有不同的stack，delayedRecycled是当前线程所有。当前线程可能有很多的recycler
             Map<Stack<?>, WeakOrderQueue> delayedRecycled = DELAYED_RECYCLED.get();
             WeakOrderQueue queue = delayedRecycled.get(this);
-            //下面根据情况 判断是否加入queue
+            //下面根据情况 判断是否创建新的queue 是否加入queue
             if (queue == null) {
+            	//当前线程的对象池太多了 不能再创建了对象池共享队列了
                 if (delayedRecycled.size() >= maxDelayedQueues) {
                     // Add a dummy queue so we know we should drop the object
                     delayedRecycled.put(this, WeakOrderQueue.DUMMY);
