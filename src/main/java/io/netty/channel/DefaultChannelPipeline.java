@@ -122,7 +122,6 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return new DefaultChannelHandlerContext(this, childExecutor(group), name, handler);
     }
 
-    //TODO 待研究
     private EventExecutor childExecutor(EventExecutorGroup group) {
         if (group == null) {
             return null;

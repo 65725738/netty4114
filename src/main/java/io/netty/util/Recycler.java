@@ -37,6 +37,64 @@ import static java.lang.Math.min;
  *
  * @param <T> the type of the pooled object
  */
+
+/**
+ *  TODO netty 实现的对象池 有很多细节不了解
+ * 
+ *
+ *
+ *  Recycler内部主要包含三个核心组件：Handle WeakOrderQueue Stack
+ *
+	Handle
+	Recycler在内部类中给出了Handle的一个默认实现：DefaultHandle，Handle主要提供一个recycle接口，用于提供对象回收的具体实现，每个Handle关联一个value字段，用于存放具体的池化对象，
+	记住，在对象池中，所有的池化对象都被这个Handle包装，Handle是对象池管理的基本单位。另外Handle指向这对应的Stack，对象存储也就是Handle存储的具体地方由Stack维护和管理。
+	
+	Stack
+	Stack具体维护着对象池数据，向Recycler提供push和pop两个主要访问接口，pop用于从内部弹出一个可被重复使用的对象，push用于回收以后可以重复使用的对象。
+ 	push 如果当前线程是当前stack对象的线程，那么将实例放入stack中，否则：获取当前线程对应的Map<Stack, WeakOrderQueue>，并将实例加入到Stack对应的Queue中。
+
+	WeakOrderQueue
+	WeakOrderQueue的功能可以由两个接口体现，add和transfer。add用于将handler（对象池管理的基本单位）放入队列，transfer用于向stack输入可以被重复使用的对象。
+	我们可以把WeakOrderQueue看做一个对象仓库，stack内只维护一个Handle数组用于直接向Recycler提供服务，当从这个数组中拿不到对象的时候则会寻找对应WeakOrderQueue并调用其transfer方法向stack供给对象。
+	WeakOrderQueue是由Link链表组成,Link内部包含了一个数组用于存放实例，同时标记了读取位置的索引和下一个Link元素的指针
+	
+	  Recycler是netty按照自己的特点实现的线程池。netty4 核心之一是 它的线程模型。netty为了实现单机的高并发 设计了如此的线程模型。归根到底就是io线程处理核心的逻辑。尽量避免线程同步。Recycler里面 
+	每个Handle都会绑定自己的stack 。stack是thread-local 每个不同的线程都会有一个stack。也就是说如果1个Recycler 实例有多个线程处理。就会有多个stack。
+	对于pop操作会从当前线程获取stack，然后获取handle。不存在当前线程获取别的线程的stack的handle。所以不存在线程竞争。对于push操作可能存在当前线程不是当前stack对象的线程，典型的情况io线程获取stack。
+            而ChannelHandler如果是其他线程处理,也会在其他线程释放。为了避免竞争。netty引入了WeakOrderQueue。对不是当前stack线程的回收操作，放到这个stack关联的一个WeakOrderQueue里面.
+            
+    TODO 疑问        
+    1 根据代码应该是每个stack 都会共享一个不同线程回收创建的WeakOrderQueue链表。不同的stack之间的WeakOrderQueue应该不是共享的？？？？但是代码里面每次回收都把handle的stack设置为null pop时候又重新设置，好像感觉应该同一个
+    Recycler所有的WeakOrderQueue都是共享的。而不是同一个Recycler每个stack是共享的。
+    2：stack里面 scavengeSome()代码  WeakOrderQueue的 transfer代码实现细节很难理解。  不知道为什么如此处理？
+      transfer里面为什么读第一个link发现读完了。就到下一个link,这个link如果也读完了，就直接返回false。为什么不继续往下读下一个link？
+    3：dropHandle push的时候用可以理解 不是每次都回收对象。 但是为什么transfer里面也需要dropHandle？
+    
+            
+	  
+	
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ */
+
+
 public abstract class Recycler<T> {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Recycler.class);
