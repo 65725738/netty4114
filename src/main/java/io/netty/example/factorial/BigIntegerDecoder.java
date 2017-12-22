@@ -31,6 +31,7 @@ import java.util.List;
  */
 public class BigIntegerDecoder extends ByteToMessageDecoder {
 
+	//自己处理 注意粘包
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         // Wait until the length prefix is available.
@@ -38,6 +39,7 @@ public class BigIntegerDecoder extends ByteToMessageDecoder {
             return;
         }
 
+        
         in.markReaderIndex();
 
         // Check the magic number.

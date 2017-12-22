@@ -67,6 +67,11 @@ import java.util.List;
  * is not released or added to the <tt>out</tt> {@link List}. Use derived buffers like {@link ByteBuf#readSlice(int)}
  * to avoid leaking memory.
  */
+
+/**
+ * 重要的解码器抽象类 处理粘包等问题 必须是不能分享的handler NotSharable
+ *
+ */
 public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter {
 
     /**
@@ -253,10 +258,11 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
+        	// 解码结果 自定义List实现 TODO 为什么？ 仅仅是对象池此list是对象池管理吗？
             CodecOutputList out = CodecOutputList.newInstance();
             try {
                 ByteBuf data = (ByteBuf) msg;
-                first = cumulation == null;
+                first = cumulation == null;// 累积区为空表示首次解码
                 if (first) {
                     cumulation = data;
                 } else {
