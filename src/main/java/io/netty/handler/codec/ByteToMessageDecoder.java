@@ -238,6 +238,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
             if (readable > 0) {
                 ByteBuf bytes = buf.readBytes(readable);
                 buf.release();
+             // 解码器已被删除故不再解码，只将数据传播到下一个Handler
                 ctx.fireChannelRead(bytes);
             } else {
                 buf.release();
@@ -321,8 +322,10 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         numReads = 0;
         discardSomeReadBytes();
+        // 没有解码出结果，则期待更多数据读入
         if (decodeWasNull) {
             decodeWasNull = false;
+          //  调用ctx.read()期待读入更多的数据。如果设置了自动读取，将会在HeadHandler中调用ctx.read()；没有设置自动读取，则需要此处显式调用
             if (!ctx.channel().config().isAutoRead()) {
                 ctx.read();
             }
@@ -416,6 +419,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 int outSize = out.size();
 
                 if (outSize > 0) {
+                	// 解码出消息就立即处理，防止消息等待
                     fireChannelRead(ctx, out, outSize);
                     out.clear();
 
@@ -494,6 +498,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
         try {
             decode(ctx, in, out);
         } finally {
+        	//TODO 为什么需要这里判断状态 调用 handlerRemoved. handlerRemoved不是handler事件吗,应该是自动调用呀
             boolean removePending = decodeState == STATE_HANDLER_REMOVED_PENDING;
             decodeState = STATE_INIT;
             if (removePending) {

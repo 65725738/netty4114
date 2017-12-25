@@ -132,10 +132,11 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             return group.next();
         }
         
-        //用4个Executor 并且每个the same channel 的 Executor 是一样的
+        //用4个Executor 并且每个the same channel 的 Executor 是一样的  
         Map<EventExecutorGroup, EventExecutor> childExecutors = this.childExecutors;
         if (childExecutors == null) {
             // Use size of 4 as most people only use one extra EventExecutor.
+        	//EventExecutorGroup group 的实例必须是不一样的。如果是一个实例  则只有一个EventExecutor
             childExecutors = this.childExecutors = new IdentityHashMap<EventExecutorGroup, EventExecutor>(4);
         }
         // Pin one of the child executors once and remember it so that the same child executor
