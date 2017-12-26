@@ -107,6 +107,7 @@ public class IdleStateHandler extends ChannelDuplexHandler {
         }
     };
 
+    //   ChannelOutboundBuffer 里面的 flushedEntry 的变化 是否影响到  writerIdleTimeNanos 和 allIdleTimeNanos
     private final boolean observeOutput;
     private final long readerIdleTimeNanos;
     private final long writerIdleTimeNanos;
