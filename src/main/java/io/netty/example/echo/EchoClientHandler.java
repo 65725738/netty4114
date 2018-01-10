@@ -78,5 +78,6 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<Object> {
 		//System.out.println("channel$$$$$$$$$$$$$$$$$$read!!!!!!!!::::::::::"+msg);
 
 		
+		//ctx.close();
 	}
 }
