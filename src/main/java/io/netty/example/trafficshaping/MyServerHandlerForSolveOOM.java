@@ -11,6 +11,7 @@ public class MyServerHandlerForSolveOOM extends MyServerCommonHandler {
 
     @Override
     protected void sentData(ChannelHandlerContext ctx) {
+    	
 
             while (true) {
                 if(ctx.channel().isWritable()) {

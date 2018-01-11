@@ -492,6 +492,7 @@ public final class ChannelOutboundBuffer {
      * no {@linkplain #setUserDefinedWritability(int, boolean) user-defined writability flag} has been set to
      * {@code false}.
      */
+    //需要用户自己去调用判断
     public boolean isWritable() {
         return unwritable == 0;
     }

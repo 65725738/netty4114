@@ -158,6 +158,7 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
      * this method returns {@code false} are queued until the I/O thread is
      * ready to process the queued write requests.
      */
+    //需要用户自己去调用判断 也就是不可写的时候 如果程序还是一直write 最终可能会导致OOM netty不会判断这个 只是把用户需要write的放在unflush队列里面等待发送 如果发送过快 网络发送太慢 可能导致OOM
     boolean isWritable();
 
     /**

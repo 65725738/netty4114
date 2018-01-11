@@ -270,8 +270,14 @@ read write flush:
     用一个entry链表 flushedEntry,unflushedEntry,tailEntry三个标记位置 来 进行操作处理flushedEntry + flushed 标记已经flush的  unflushedEntry一直到tailEntry 表示unflushed.
     write操作是把当前需要写的msg 放入entry队列 并且都是unflushedEntry的。 flush操作会把当前队列unflushedEntry设置为null。并增加 flushed值 因为flushedEntry始终在头部，所以这样可以控制flushedEntry个数。 然后会write到channel。如果不能write 会设置  key.interestOps(interestOps | SelectionKey.OP_WRITE)等channel可以write的时候 再write.
 
-   
+注意:
 
+不要在非NioEventLoop线程中不停歇的发送非ByteBuf、ByteBufHolder或者FileRegion对象的大数据包.
+ 因为写操作是一个I/O操作，当你在非NioEventLoop线程上执行了Channel的I/O操作的话，该操作会封装为一个task 被提交至NioEventLoop的任务队列中，以使得I/O操作最终是NioEventLoop线程上得到执行。
+ 而提交这个任务的流程，仅会对ByteBuf、ByteBufHolder或者FileRegion对象进行真实数据大小的估计（其他情况默认估计大小为8 bytes），并将估计后的数据大小值对该ChannelOutboundBuffer的totalPendingSize属性值进行累加。而totalPendingSize同WriteBufferWaterMark一起来控制着Channel的unwritable。所以，如果你在一个非NioEventLoop线程中不断地发送一个非ByteBuf、ByteBufHolder或者FileRegion对象的大数据包时，最终就会导致NioEventLoop线程在真实执行这些task时发送OOM。
+ 【Caused by: io.netty.util.internal.OutOfDirectMemoryError: failed to allocate 81788928 byte(s) of direct memory (used: 916455424, max: 954728448)】
+ 如果是在io线程写操作。是在最终的handler(headTail)之后才估计真实大小。而且 会先判断是否ByteBuf FileRegion如果不是 则throw  UnsupportedOperationException。所以估计的大小是真实的大小。不会OOM
+ 
  
  
  内存泄漏检测 ResourceLeakDetector 
@@ -293,7 +299,8 @@ DefaultResourceLeak。这样就该对象不可达的时候,虽然ReferenceQueue�
  
  
  
- 
+ GlobalTrafficShapingHandler ChannelTrafficShapingHandler流量整形 ：注意流控的数据包 要大于 发送的ByteBuf的大小。否则就不能准确控制流量。因为发送的时候会以一个msg(ByteBuf或者FileRegion)发送。
+ 如果ByteBuf的字节数远大于流控设置的每秒最大发送包大小。那就没有意义了。
  
  
  

@@ -41,7 +41,7 @@ public abstract class MyServerCommonHandler extends SimpleChannelInboundHandler<
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         sentData(ctx);
-        new Thread(counterTask).start();
+       // new Thread(counterTask).start();
     }
 
     protected ChannelProgressivePromise getChannelProgressivePromise(ChannelHandlerContext ctx, Consumer<ChannelProgressiveFuture> completedAction) {

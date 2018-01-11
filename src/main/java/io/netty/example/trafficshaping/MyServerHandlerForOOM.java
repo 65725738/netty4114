@@ -13,9 +13,23 @@ public class MyServerHandlerForOOM extends MyServerCommonHandler {
     protected void sentData(ChannelHandlerContext ctx) {
 
         new Thread(() -> {
-            while (true) {
-                ctx.writeAndFlush(tempStr, getChannelProgressivePromise(ctx, null));
-            }
+        	
+        	while (true) {
+        	  if(ctx.channel().isWritable()) {
+                  System.out.println("===");
+                  ctx.writeAndFlush(tempStr, getChannelProgressivePromise(ctx, null));
+              } else {
+                  try {
+					Thread.sleep(100);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+              }
+        	 }
+        	  
+//            while (true) {
+//                ctx.writeAndFlush(tempStr, getChannelProgressivePromise(ctx, null));
+//            }
         }).start();
 
     }
