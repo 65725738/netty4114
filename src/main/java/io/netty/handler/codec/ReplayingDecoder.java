@@ -272,7 +272,7 @@ public abstract class ReplayingDecoder<S> extends ByteToMessageDecoder {
     private final ReplayingDecoderByteBuf replayable = new ReplayingDecoderByteBuf();
     private S state;
     private int checkpoint = -1;
-
+    
     /**
      * Creates a new instance with no initial state (i.e: {@code null}).
      */

@@ -467,6 +467,7 @@ public abstract class AbstractTrafficShapingHandler extends ChannelDuplexHandler
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+    	// 仅仅对ByteBuf and  ByteBufHolder 限流
         long size = calculateSize(msg);
         long now = TrafficCounter.milliSecondFromNano();
         if (size > 0) {
@@ -481,6 +482,7 @@ public abstract class AbstractTrafficShapingHandler extends ChannelDuplexHandler
                     logger.debug("Read suspend: " + wait + ':' + config.isAutoRead() + ':'
                             + isHandlerActive(ctx));
                 }
+                //通过控制isAutoRead 来限制selector 选择read就绪
                 if (config.isAutoRead() && isHandlerActive(ctx)) {
                     config.setAutoRead(false);
                     ctx.attr(READ_SUSPENDED).set(true);
