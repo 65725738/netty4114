@@ -99,7 +99,7 @@ ChannelHandler
      
      ChannelPipeline 增加ChannelHandler 有2种方式：
      一种是 每个channel(ChannelPipeline).都新new一个对象。对每个channel 都是独立的。 这样的话，每个ChannelHandler可以有对象属性存储一些信息。
-     
+   ChannelHandler的执行线程可能是IO线程或者是用户自定义的线程池的线程。只有HeadContext TailContext才保证是在IO线程执行
      
   public class DataServerHandler extends SimpleChannelInboundHandler<Message> {
      private boolean loggedIn;
@@ -161,6 +161,7 @@ ChannelHandler
          channel.pipeline().addLast("handler", SHARED);
      }
  }
+ 
  
  
  
@@ -280,17 +281,25 @@ read write flush:
  
  
  
+ 
+ 
+ 引用计数
+netty中使用引用计数机制来管理资源,当一个实现ReferenceCounted的对象实例化时,引用计数置1.
+客户代码中需要保持一个该对象的引用时需要调用接口的retain方法将计数增1.对象使用完毕时调用release将计数减1.
+当引用计数变为0时,对象将释放所持有的底层资源或将资源返回资源池.(需要自己实现deallocate方法去释放内存比如 PooledByteBuf)
+
+内存泄露
+按上述规则使用Direct和Pooled的ByteBuf尤其重要.对于DirectBuf,其内存不受VM垃圾回收控制只有在调用release导致计数为0时才会主动释放内存,而PooledByteBuf只有在release后才能被回收到池中以循环利用.
+如果客户代码没有按引用计数规则使用这两种对象,将会导致内存泄露.
+
  内存泄漏检测 ResourceLeakDetector 
    大致的原理是 :
  netty的内存泄漏检测用的是PhantomReference和ReferenceQueue。
-      主要原理是 用PhantomReference包装的对象。如果不可达就会被加入到ReferenceQueue。当检测ReferenceQueue的数据的时候，根据逻辑判断。
-netty的内存检测如果检测到ReferenceQueue的数据的时候，就说明有内存泄漏。因为PhantomReference包装的对象都是ReferenceCounted对象的实例。并且最后都包装成DefaultResourceLeak对象 放到PhantomReference 里面。外部使用的ReferenceQueue对象  都被包装成SimpleLeakAwareByteBuf或者AdvancedLeakAwareByteBuf 。 这样如果SimpleLeakAwareByteBuf或者AdvancedLeakAwareByteBuf release全部引用的时候会调用DefaultResourceLeak.close清除这个
-DefaultResourceLeak。这样就该对象不可达的时候,虽然ReferenceQueue有记录。但是也不会报告泄漏。 检测泄漏的逻辑是 ReferenceQueue有记录 并且在内部的记录带检测对象 里面 allLeaks也有记录，才会报告内存泄漏。 
+      主要原理是 用PhantomReference包装的对象。如果不可达(只有虚引用关联此对象就是不可达)就被加入到ReferenceQueue。当检测ReferenceQueue的数据的时候，根据逻辑判断。
+netty的内存检测如果检测到ReferenceQueue的数据的时候，就说明有内存泄漏。因为PhantomReference包装的对象都是ReferenceCounted对象的实例。并且最后都包装成DefaultResourceLeak对象 放到PhantomReference 里面。外部使用的ReferenceQueue的对象  都被包装成SimpleLeakAwareByteBuf或者AdvancedLeakAwareByteBuf 。 这样如果SimpleLeakAwareByteBuf或者AdvancedLeakAwareByteBuf release全部引用的时候会调用DefaultResourceLeak.close从ResourceLeakDetector.allLeaks清除这个DefaultResourceLeak。这样该对象不可达的时候,虽然ReferenceQueue有记录。但是也不会报告泄漏。 检测泄漏的逻辑是 ReferenceQueue有记录 并且在内部的记录带检测对象 里面 ResourceLeakDetector.allLeaks也有记录，才会报告内存泄漏。 
   Allocator生成每个ByteBuf之后都会调用AbstractByteBufAllocator的toLeakAwareBuffer方法。包装ByteBuf最终返回的是 SimpleLeakAwareByteBuf或者AdvancedLeakAwareByteBuf 
  
- 
- 
- 
+
  
  
  
@@ -313,7 +322,7 @@ DefaultResourceLeak。这样就该对象不可达的时候,虽然ReferenceQueue�
  
  
  
- InternalThreadLocalMap  FastThreadLocal
+ InternalThreadLocalMap  FastThreadLocal 与 ThreadLocal区别
  
  ResourceLeakDetectorFactory
  
