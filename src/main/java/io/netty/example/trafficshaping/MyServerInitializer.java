@@ -2,6 +2,7 @@ package io.netty.example.trafficshaping;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.example.trafficshaping.plain.MyServerHandlerForPlain;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.string.StringDecoder;
@@ -19,7 +20,7 @@ public class MyServerInitializer extends ChannelInitializer<SocketChannel> {
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
 
-        GlobalTrafficShapingHandler globalTrafficShapingHandler = new GlobalTrafficShapingHandler(ch.eventLoop().parent(), 1 * M, 50 * M);
+        GlobalTrafficShapingHandler globalTrafficShapingHandler = new GlobalTrafficShapingHandler(ch.eventLoop().parent(), 10 * M, 50 * M);
 //        globalTrafficShapingHandler.setMaxGlobalWriteSize(50 * M);
 //        globalTrafficShapingHandler.setMaxWriteSize(5 * M);
 
@@ -31,7 +32,8 @@ public class MyServerInitializer extends ChannelInitializer<SocketChannel> {
                 .addLast("myServerChunkHandler", new MyServerChunkHandler())
                 .addLast("StringDecoder", new StringDecoder(utf8))
                 .addLast("StringEncoder", new StringEncoder(utf8))
-               // .addLast("myServerHandler", new MyServerHandlerForOOM());
-                .addLast("myServerHandler", new MyServerHandlerForSolveOOM());
+                .addLast("myServerHandler", new MyServerHandlerForPlain());
+//                .addLast("myServerHandler", new MyServerHandlerForOOM());
+//                .addLast("myServerHandler", new MyServerHandlerForSolveOOM());
     }
 }
