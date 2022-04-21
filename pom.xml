@@ -3,7 +3,19 @@
   <groupId>netty4114</groupId>
   <artifactId>netty4114</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>netty4114</name>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <name>netty4114</name>
   <description>netty4114</description>
   
   
